@@ -1,17 +1,30 @@
-const express = require('express')
+const express = require('express');
 const app = express();
 const PORT = 3000;
-const agentesRouter = require("./routes/agentesRouter")
-
-app.use(agentesRouter);
 
 app.use(express.json());
 
+const agentesRoutes = require("./routes/agentesRoutes");
+const casosRoutes = require("./routes/casosRoutes");
+
+app.use('/casos', casosRoutes);
+app.use('/agentes', agentesRoutes);
+
+app.use((req, res) => {
+    res.status(404).send('Rota não encontrada');
+});
+
+app.use((err, req, res, next) => {
+    const errorResponse = {
+        status: err.status || 500,
+        message: err.message || 'Erro interno do servidor',
+        errors: err.errors || []
+    };
+    res.status(errorResponse.status).json(errorResponse);
+});
+
 app.listen(PORT, () => {
-    console.log(`Servidor do Departamento de Polícia rodando em localhost:${PORT}`);
+    console.log(`Servidor do Departamento de Polícia rodando em http://localhost:${PORT}`);
 });
 
-app.get('/', (req, res) => {
-    res.send('Bem-vindo ao Departamento de Polícia!');
-});
-
+module.exports = app;

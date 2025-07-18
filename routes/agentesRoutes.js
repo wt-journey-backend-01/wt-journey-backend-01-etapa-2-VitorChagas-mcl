@@ -1,7 +1,11 @@
-const express = require('express')
+const express = require('express');
 const router = express.Router();
 const agentesController = require('../controllers/agentesController');
 
-router.get('/agentes', agentesController.seuMetodo)
+router.get('/', agentesController.findAll);
+router.get('/:id', agentesController.findById);
+router.post('/', agentesController.create);
+router.put('/:id', agentesController.update);
+router.delete('/:id', agentesController.delete);
 
-module.exports = router
+module.exports = router;

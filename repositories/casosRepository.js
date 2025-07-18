@@ -1,5 +1,3 @@
-
-
 const casos = [
     {
         id: "f5fb2ad5-22a8-4cb4-90f2-8733517a0d46",
@@ -13,10 +11,66 @@ const casos = [
 ]
 
 function findAll() {
-    return casos
+    return casos;
 }
+
+function findById(id) {
+    return casos.find(caso => caso.id === id);
+}
+
+function create(novoCaso) {
+    if (!novoCaso.titulo || !novoCaso.descricao) {
+        alert('Título e descrição são obrigatórios');
+    }
+    casos.push(novoCaso);
+    return novoCaso;
+}
+
+function update(id, casoAtualizado) {
+    const caso = casos.find(caso => caso.id === id);
+    if (!caso) {
+        return null;
+    }
+    const index = casos.findIndex(caso => caso.id === id);
+    if (index !== -1) {
+        casos[index] = { ...casos[index], ...casoAtualizado };
+        return casos[index];
+    }
+    return null;
+}
+
+function deleteCaso(id) {
+    const caso = casos.find(caso => caso.id === id);
+    if (!caso) {
+        return false;
+    }
+    const index = casos.findIndex(caso => caso.id === id);
+    if (index !== -1) {
+        casos.splice(index, 1);
+        return true;
+    }
+    return false;
+}
+
+const uuid = require('uuid');
+
 module.exports = {
-    findAll
-}
-const express = require('express');
-const router = express.Router();    
+    findAll() {
+        return casos;
+    },
+    findById(id) {
+        return casos.find(caso => caso.id === id);
+    },
+    create(novoCaso) {
+        novoCaso.data = new Date().toISOString();
+        casos.push(novoCaso);
+        return novoCaso;
+    },
+    update(id, casoAtualizado) {
+        return update(id, casoAtualizado);
+    },
+    delete(id) {
+        return deleteCaso(id);
+    }
+};
+const agentesRepository = require('./agentesRepository');
