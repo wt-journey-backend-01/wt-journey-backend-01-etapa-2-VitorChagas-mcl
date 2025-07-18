@@ -8,4 +8,4 @@ router.post('/', casosController.create);
 router.put('/:id', casosController.update);
 router.delete('/:id', casosController.delete);
 
-module.exports = router
+module.exports = router;

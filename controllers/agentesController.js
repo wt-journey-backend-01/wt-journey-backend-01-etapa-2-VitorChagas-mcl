@@ -1,51 +1,46 @@
+
 const agentesRepository = require('../repositories/agentesRepository');
 
-const express = require('express');
-const router = express.Router();
+module.exports = {
+    findAll(req, res) {
+        const agentes = agentesRepository.findAll();
+        if (!agentes || agentes.length === 0) {
+            return res.status(404).send('Nenhum agente encontrado');
+        }
+        res.json(agentes);
+    },
 
-router.get('/agentes', (req, res) => {
-    const agentes = agentesRepository.findAll();
-    res.json(agentes);
-    if(agentes.length === 0) {
-        res.status(404).send('Nenhum agente encontrado');
-    }
-});
-
-router.get('/agentes/:id', (req, res) => {
-    const id = req.params.id;
-    const agente = agentesRepository.findById(id);
-    if(agente) {
+    findById(req, res) {
+        const id = req.params.id;
+        const agente = agentesRepository.findById(id);
+        if (!agente) {
+            return res.status(404).send('Agente não encontrado');
+        }
         res.json(agente);
-    } else {
-        res.status(404).send('Agente não encontrado');
-    }
-});
+    },
 
-router.post('/agentes', (req, res) => {
-    const novoAgente = req.body;
-    const agenteCriado = agentesRepository.create(novoAgente);
-    res.status(201).json(agenteCriado);
-});
+    create(req, res) {
+        const novoAgente = req.body;
+        const agenteCriado = agentesRepository.create(novoAgente);
+        res.status(201).json(agenteCriado);
+    },
 
-router.put('/agentes/:id', (req, res) => {
-    const id = req.params.id;
-    const agenteAtualizado = req.body;
-    const agente = agentesRepository.update(id, agenteAtualizado);
-    if(agente) {
+    update(req, res) {
+        const id = req.params.id;
+        const dadosAtualizados = req.body;
+        const agente = agentesRepository.update(id, dadosAtualizados);
+        if (!agente) {
+            return res.status(404).send('Agente não encontrado');
+        }
         res.json(agente);
-    } else {
-        res.status(404).send('Agente não encontrado');
-    }
-});
+    },
 
-router.delete('/agentes/:id', (req, res) => {
-    const id = req.params.id;
-    const resultado = agentesRepository.delete(id);
-    if(resultado) {
+    delete(req, res) {
+        const id = req.params.id;
+        const sucesso = agentesRepository.delete(id);
+        if (!sucesso) {
+            return res.status(404).send('Agente não encontrado');
+        }
         res.status(204).send();
-    } else {
-        res.status(404).send('Agente não encontrado');
     }
-});
-
-module.exports = router;
+};

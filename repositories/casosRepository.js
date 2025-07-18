@@ -4,8 +4,7 @@ const casos = [
         titulo: "homicidio",
         descricao: "Disparos foram reportados às 22:33 do dia 10/07/2007 na região do bairro União, resultando na morte da vítima, um homem de 45 anos.",
         status: "aberto",
-        agente_id: "401bccf5-cf9e-489d-8412-446cd169a0f1" 
-    
+        agente_id: "401bccf5-cf9e-489d-8412-446cd169a0f1"
     },
     //Demais objetos
 ]
@@ -19,8 +18,9 @@ function findById(id) {
 }
 
 function create(novoCaso) {
+    novoCaso.id = uuid.v4();
     if (!novoCaso.titulo || !novoCaso.descricao) {
-        alert('Título e descrição são obrigatórios');
+        throw new Error('Título e descrição são obrigatórios');
     }
     casos.push(novoCaso);
     return novoCaso;
@@ -55,22 +55,11 @@ function deleteCaso(id) {
 const uuid = require('uuid');
 
 module.exports = {
-    findAll() {
-        return casos;
-    },
-    findById(id) {
-        return casos.find(caso => caso.id === id);
-    },
-    create(novoCaso) {
-        novoCaso.data = new Date().toISOString();
-        casos.push(novoCaso);
-        return novoCaso;
-    },
-    update(id, casoAtualizado) {
-        return update(id, casoAtualizado);
-    },
-    delete(id) {
-        return deleteCaso(id);
-    }
+    findAll,
+    findById,
+    create,
+    update,
+    delete: deleteCaso
 };
+
 const agentesRepository = require('./agentesRepository');
