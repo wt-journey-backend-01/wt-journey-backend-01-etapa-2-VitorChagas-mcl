@@ -10,36 +10,48 @@ const agentes = [
 ];
 
 function findAll() {
-    return Agentes;
+    return agentes;
+}
+
+function isValidUUID(id) {
+    return uuid.validate(id);
 }
 
 function findById(id) {
-    return Agentes.find(Agente => Agente.id === id);
+    return agentes.find(agente => agente.id === id);
 }
 
 function create(novoAgente) {
-    if (!novoAgente.titulo || !novoAgente.descricao || !novoAgente.status || !novoAgente.agente_id) {
-        throw new Error("Campos obrigatórios ausentes.");
-    }
     novoAgente.id = uuid.v4();
     novoAgente.data = new Date().toISOString();
-    Agentes.push(novoAgente);
+    agentes.push(novoAgente);
     return novoAgente;
 }
 
-function update(id, AgenteAtualizado) {
-    const index = Agentes.findIndex(Agente => Agente.id === id);
+function update(id, agenteAtualizado) {
+    const index = agentes.findIndex(agente => agente.id === id);
     if (index === -1) return null;
 
-    Agentes[index] = { ...Agentes[index], ...AgenteAtualizado };
-    return Agentes[index];
+    agentes[index] = { ...agentes[index], ...agenteAtualizado };
+    return agentes[index];
+}
+
+function partialUpdate(req, res) {
+    const id = req.params.id;
+    const dadosParciais = req.body;
+    const agenteAtualizado = agenteRepository.update(id, dadosParciais);
+    if (!agenteAtualizado) {
+        return res.status(404).send('Caso não encontrado');
+    }
+
+    res.json(casoAtualizado);
 }
 
 function deleteAgente(id) {
-    const index = Agentes.findIndex(Agente => Agente.id === id);
+    const index = agentes.findIndex(agente => agente.id === id);
     if (index === -1) return false;
 
-    Agentes.splice(index, 1);
+    agentes.splice(index, 1);
     return true;
 }
 
@@ -48,5 +60,6 @@ module.exports = {
     findById,
     create,
     update,
+    partialUpdate,
     delete: deleteAgente
 };

@@ -1,6 +1,8 @@
 // controllers/casosController.js
 const casosRepository = require('../repositories/casosRepository');
 
+const uuid = require('uuid');
+
 module.exports = {
     findAll(req, res) {
         const casos = casosRepository.findAll();
@@ -21,6 +23,7 @@ module.exports = {
 
     create(req, res) {
         const novoCaso = req.body;
+        novoCaso = uuid.v4();
         if (!novoCaso.titulo || !novoCaso.descricao || !novoCaso.status || !novoCaso.agente_id) {
             return res.status(400).json({ message: 'Campos obrigatórios faltando' });
         }
@@ -36,6 +39,17 @@ module.exports = {
             return res.status(404).send('Caso não encontrado');
         }
         res.json(caso);
+    },
+
+    partialUpdate(req, res) {
+        const id = req.params.id;
+        const dadosParciais = req.body;
+        const casoAtualizado = casosRepository.update(id, dadosParciais);
+        if (!casoAtualizado) {
+            return res.status(404).send('Caso não encontrado');
+        }
+    
+        res.json(casoAtualizado);
     },
 
     delete(req, res) {

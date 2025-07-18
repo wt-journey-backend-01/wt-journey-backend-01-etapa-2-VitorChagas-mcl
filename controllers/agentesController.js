@@ -1,6 +1,8 @@
 
 const agentesRepository = require('../repositories/agentesRepository');
 
+const uuid = require('uuid');
+
 module.exports = {
     findAll(req, res) {
         const agentes = agentesRepository.findAll();
@@ -21,6 +23,7 @@ module.exports = {
 
     create(req, res) {
         const novoAgente = req.body;
+        novoAgente = uuid.v4();
         const agenteCriado = agentesRepository.create(novoAgente);
         res.status(201).json(agenteCriado);
     },
@@ -33,6 +36,17 @@ module.exports = {
             return res.status(404).send('Agente não encontrado');
         }
         res.json(agente);
+    },
+
+    partialUpdate(req, res) {
+        const id = req.params.id;
+        const dadosParciais = req.body;
+        const casoAtualizado = casosRepository.update(id, dadosParciais);
+        if (!casoAtualizado) {
+            return res.status(404).send('Caso não encontrado');
+        }
+    
+        res.json(casoAtualizado);
     },
 
     delete(req, res) {

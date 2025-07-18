@@ -1,3 +1,5 @@
+const uuid = require('uuid');
+
 const casos = [
     {
         id: "f5fb2ad5-22a8-4cb4-90f2-8733517a0d46",
@@ -9,21 +11,32 @@ const casos = [
     //Demais objetos
 ]
 
+const agentesRepository = require('../repositories/agentesRepository');
+const casosRepository = require('../repositories/casosRepository');
+
 function findAll() {
     return casos;
+}
+
+function isValidUUID(id) {
+    return uuid.validate(id);
 }
 
 function findById(id) {
     return casos.find(caso => caso.id === id);
 }
 
-function create(novoCaso) {
+function create(req, res) {
     novoCaso.id = uuid.v4();
-    if (!novoCaso.titulo || !novoCaso.descricao) {
-        throw new Error('Título e descrição são obrigatórios');
+    if (!novoCaso.titulo || !novoCaso.descricao || !novoCaso.status || !novoCaso.agente_id) {
+        return res.status(400).json({ message: 'Campos obrigatórios faltando' });
     }
-    casos.push(novoCaso);
-    return novoCaso;
+    const agenteExiste = agentesRepository.findById(novoCaso.agente_id);
+    if (!agenteExiste) {
+        return res.status(404).json({ message: 'Agente não encontrado para o agente_id informado' });
+    }
+    const casoCriado = casosRepository.create(novoCaso);
+    res.status(201).json(casoCriado);
 }
 
 function update(id, casoAtualizado) {
@@ -39,6 +52,16 @@ function update(id, casoAtualizado) {
     return null;
 }
 
+function partialUpdate(req, res) {
+    const id = req.params.id;
+    const dadosParciais = req.body;
+    const casoAtualizado = casosRepository.update(id, dadosParciais);
+    if (!casoAtualizado) {
+        return res.status(404).send('Caso não encontrado');
+    }
+    res.json(casoAtualizado);
+}
+
 function deleteCaso(id) {
     const caso = casos.find(caso => caso.id === id);
     if (!caso) {
@@ -52,14 +75,11 @@ function deleteCaso(id) {
     return false;
 }
 
-const uuid = require('uuid');
-
 module.exports = {
     findAll,
     findById,
     create,
     update,
+    partialUpdate,
     delete: deleteCaso
 };
-
-const agentesRepository = require('./agentesRepository');
