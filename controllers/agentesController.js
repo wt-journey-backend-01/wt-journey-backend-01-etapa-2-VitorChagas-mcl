@@ -18,22 +18,33 @@ module.exports = {
         res.json(agente);
     },
 
+    isValidDate(dateString) {
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(dateString)) return false;
+    const date = new Date(dateString);
+    const today = new Date();
+    return !isNaN(date.getTime()) && date <= today;
+    },
+
+
     create(req, res) {
         const { nome, dataDeIncorporacao, cargo } = req.body;
-            if (!nome || !dataDeIncorporacao || !cargo) {
-            return res.status(400).json({
-                status: 400,
-                message: "Parâmetros inválidos",
-                errors: [
-                nome ? null : { field: "nome", message: "Nome é obrigatório" },
-                dataDeIncorporacao ? null : { field: "dataDeIncorporacao", message: "Data é obrigatória e deve estar no formato YYYY-MM-DD" },
-                cargo ? null : { field: "cargo", message: "Cargo é obrigatório" }
-                ].filter(Boolean)
-            });
+
+            const errors = [];
+            if (!nome) errors.push({ field: "nome", message: "Nome é obrigatório" });
+            if (!cargo) errors.push({ field: "cargo", message: "Cargo é obrigatório" });
+            if (!dataDeIncorporacao || !isValidDate(dataDeIncorporacao)) {
+                errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
             }
-        const agenteCriado = agentesRepository.create({ nome, dataDeIncorporacao, cargo });
-        res.status(201).json(agenteCriado);
+
+            if (errors.length > 0) {
+                return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+            }
+
+            const agenteCriado = agentesRepository.create({ nome, dataDeIncorporacao, cargo });
+            res.status(201).json(agenteCriado);
     },
+
 
     update(req, res) {
         const id = req.params.id;

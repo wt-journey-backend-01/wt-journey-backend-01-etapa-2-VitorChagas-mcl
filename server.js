@@ -11,7 +11,7 @@ app.use('/casos', casosRoutes);
 app.use('/agentes', agentesRoutes);
 
 app.use((req, res) => {
-    res.status(404).send('Rota não encontrada');
+  res.status(404).json({ status: 404, message: 'Rota não encontrada' });
 });
 
 app.use((err, req, res, next) => {

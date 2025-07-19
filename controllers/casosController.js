@@ -30,7 +30,12 @@ module.exports = {
 
     create(req, res) {
         const novoCaso = req.body;
-
+        const statusPermitidos = ['aberto', 'solucionado'];
+        if (!statusPermitidos.includes(novoCaso.status)) {
+        return res.status(400).json({
+            errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
+        });
+        }
         // Validação
         if (!novoCaso.titulo || !novoCaso.descricao || !novoCaso.status || !novoCaso.agente_id) {
             return res.status(400).json({
@@ -39,7 +44,7 @@ module.exports = {
                 errors: [
                     !novoCaso.titulo ? { field: "titulo", message: "Título é obrigatório" } : null,
                     !novoCaso.descricao ? { field: "descricao", message: "Descrição é obrigatória" } : null,
-                    !novoCaso.status ? { field: "status", message: "Status é obrigatório" } : null,
+                    !novoCaso.status ? { field: "status", message: "Status é obrigatório aberto ou solucionado" } : null,
                     !novoCaso.agente_id ? { field: "agente_id", message: "Agente é obrigatório" } : null
                 ].filter(Boolean)
             });
@@ -54,13 +59,18 @@ module.exports = {
         res.status(201).json(casoCriado);
     },
 
+    
+
     update(req, res) {
         const id = req.params.id;
         const dadosAtualizados = req.body;
-        const caso = casosRepository.update(id, dadosAtualizados);
-        if (!caso) {
-            return res.status(404).send('Caso não encontrado');
+        if (dados.status && !['aberto', 'solucionado'].includes(dados.status)) {
+            return res.status(400).json({
+            errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
+            });
         }
+        const caso = casosRepository.update(id, dadosAtualizados);
+        if (!caso) return res.status(404).send('Caso não encontrado');
         res.json(caso);
     },
 
