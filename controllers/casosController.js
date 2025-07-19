@@ -15,7 +15,13 @@ const agentesRepository = require('../repositories/agentesRepository');
 
 module.exports = {
     findAll(req, res) {
-        const casos = casosRepository.findAll();
+        const { status } = req.query;
+        let casos = casosRepository.findAll();
+
+        if (status) {
+            casos = casos.filter(caso => caso.status === status);
+        }
+
         res.json(casos);
     },
 
@@ -63,7 +69,10 @@ module.exports = {
 
     update(req, res) {
         const id = req.params.id;
-        const dadosAtualizados = req.body;
+        const dadosAtualizados = { ...req.body };
+        if ('id' in dadosAtualizados) {
+            delete dadosAtualizados.id;
+        }
         if (dadosAtualizados.status && !['aberto', 'solucionado'].includes(dadosAtualizados.status)) {
             return res.status(400).json({
             errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
@@ -76,8 +85,11 @@ module.exports = {
 
     partialUpdate(req, res) {
         const id = req.params.id;
-        const dadosParciais = req.body;
-        const casoAtualizado = casosRepository.update(id, dadosParciais);
+        const dadosAtualizados = { ...req.body };
+        if ('id' in dadosAtualizados) {
+            delete dadosAtualizados.id;
+        }
+        const casoAtualizado = casosRepository.update(id, dadosAtualizados);
         if (!casoAtualizado) {
             return res.status(404).send('Caso não encontrado');
         }

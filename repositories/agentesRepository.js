@@ -28,6 +28,7 @@ function update(id, agenteAtualizado) {
     if (index === -1) return null;
 
     agentes[index] = { ...agentes[index], ...agenteAtualizado };
+    agentes[index].id = id
     return agentes[index];
 }
 
