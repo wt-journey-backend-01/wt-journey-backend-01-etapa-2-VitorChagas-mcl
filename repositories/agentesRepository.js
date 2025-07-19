@@ -2,19 +2,15 @@ const uuid = require('uuid');
 
 const agentes = [
     {
-            id: "401bccf5-cf9e-489d-8412-446cd169a0f1",
-            nome: "Rommel Carneiro",
-            dataDeIncorporacao: "1992/10/04",
-            cargo: "delegado"
-    },
+        id: "401bccf5-cf9e-489d-8412-446cd169a0f1",
+        nome: "Rommel Carneiro",
+        dataDeIncorporacao: "1992-10-04",
+        cargo: "delegado"
+    }
 ];
 
 function findAll() {
     return agentes;
-}
-
-function isValidUUID(id) {
-    return uuid.validate(id);
 }
 
 function findById(id) {
@@ -23,7 +19,6 @@ function findById(id) {
 
 function create(novoAgente) {
     novoAgente.id = uuid.v4();
-    novoAgente.data = new Date().toISOString();
     agentes.push(novoAgente);
     return novoAgente;
 }
@@ -34,17 +29,6 @@ function update(id, agenteAtualizado) {
 
     agentes[index] = { ...agentes[index], ...agenteAtualizado };
     return agentes[index];
-}
-
-function partialUpdate(req, res) {
-    const id = req.params.id;
-    const dadosParciais = req.body;
-    const agenteAtualizado = agenteRepository.update(id, dadosParciais);
-    if (!agenteAtualizado) {
-        return res.status(404).send('Caso não encontrado');
-    }
-
-    res.json(casoAtualizado);
 }
 
 function deleteAgente(id) {
@@ -60,6 +44,5 @@ module.exports = {
     findById,
     create,
     update,
-    partialUpdate,
     delete: deleteAgente
 };

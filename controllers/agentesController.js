@@ -1,7 +1,4 @@
-
 const agentesRepository = require('../repositories/agentesRepository');
-
-const uuid = require('uuid');
 
 module.exports = {
     findAll(req, res) {
@@ -22,9 +19,19 @@ module.exports = {
     },
 
     create(req, res) {
-        const novoAgente = req.body;
-        novoAgente = uuid.v4();
-        const agenteCriado = agentesRepository.create(novoAgente);
+        const { nome, dataDeIncorporacao, cargo } = req.body;
+            if (!nome || !dataDeIncorporacao || !cargo) {
+            return res.status(400).json({
+                status: 400,
+                message: "Parâmetros inválidos",
+                errors: [
+                nome ? null : { field: "nome", message: "Nome é obrigatório" },
+                dataDeIncorporacao ? null : { field: "dataDeIncorporacao", message: "Data é obrigatória e deve estar no formato YYYY-MM-DD" },
+                cargo ? null : { field: "cargo", message: "Cargo é obrigatório" }
+                ].filter(Boolean)
+            });
+            }
+        const agenteCriado = agentesRepository.create({ nome, dataDeIncorporacao, cargo });
         res.status(201).json(agenteCriado);
     },
 
@@ -41,12 +48,11 @@ module.exports = {
     partialUpdate(req, res) {
         const id = req.params.id;
         const dadosParciais = req.body;
-        const casoAtualizado = casosRepository.update(id, dadosParciais);
-        if (!casoAtualizado) {
-            return res.status(404).send('Caso não encontrado');
+        const agenteAtualizado = agentesRepository.update(id, dadosParciais);
+        if (!agenteAtualizado) {
+            return res.status(404).send('Agente não encontrado');
         }
-    
-        res.json(casoAtualizado);
+        res.json(agenteAtualizado);
     },
 
     delete(req, res) {
