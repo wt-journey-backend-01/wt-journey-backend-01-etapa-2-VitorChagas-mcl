@@ -1,5 +1,13 @@
 const agentesRepository = require('../repositories/agentesRepository');
 
+function isValidDate(dateString) {
+  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!regex.test(dateString)) return false;
+  const date = new Date(dateString);
+  const today = new Date();
+  return !isNaN(date.getTime()) && date <= today;
+}
+
 module.exports = {
     findAll(req, res) {
         const agentes = agentesRepository.findAll();
@@ -18,32 +26,22 @@ module.exports = {
         res.json(agente);
     },
 
-    isValidDate(dateString) {
-    const regex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!regex.test(dateString)) return false;
-    const date = new Date(dateString);
-    const today = new Date();
-    return !isNaN(date.getTime()) && date <= today;
-    },
-
-
-    create(req, res) {
+  create(req, res) {
         const { nome, dataDeIncorporacao, cargo } = req.body;
+        const errors = [];
+        if (!nome) errors.push({ field: "nome", message: "Nome é obrigatório" });
+        if (!cargo) errors.push({ field: "cargo", message: "Cargo é obrigatório" });
+        if (!dataDeIncorporacao || !isValidDate(dataDeIncorporacao)) {
+        errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+        }
 
-            const errors = [];
-            if (!nome) errors.push({ field: "nome", message: "Nome é obrigatório" });
-            if (!cargo) errors.push({ field: "cargo", message: "Cargo é obrigatório" });
-            if (!dataDeIncorporacao || !isValidDate(dataDeIncorporacao)) {
-                errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
-            }
+        if (errors.length > 0) {
+        return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+        }
 
-            if (errors.length > 0) {
-                return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
-            }
-
-            const agenteCriado = agentesRepository.create({ nome, dataDeIncorporacao, cargo });
-            res.status(201).json(agenteCriado);
-    },
+        const agenteCriado = agentesRepository.create({ nome, dataDeIncorporacao, cargo });
+        res.status(201).json(agenteCriado);
+  },
 
 
     update(req, res) {

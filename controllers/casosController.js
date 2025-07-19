@@ -31,11 +31,6 @@ module.exports = {
     create(req, res) {
         const novoCaso = req.body;
         const statusPermitidos = ['aberto', 'solucionado'];
-        if (!statusPermitidos.includes(novoCaso.status)) {
-        return res.status(400).json({
-            errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
-        });
-        }
         // Validação
         if (!novoCaso.titulo || !novoCaso.descricao || !novoCaso.status || !novoCaso.agente_id) {
             return res.status(400).json({
@@ -50,6 +45,11 @@ module.exports = {
             });
         }
 
+        if (!statusPermitidos.includes(novoCaso.status)) {
+            return res.status(400).json({
+                errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
+            });
+        }
         const agenteExiste = agentesRepository.findById(novoCaso.agente_id);
         if (!agenteExiste) {
             return res.status(404).json({ message: 'Agente não encontrado para o agente_id informado' });
@@ -64,7 +64,7 @@ module.exports = {
     update(req, res) {
         const id = req.params.id;
         const dadosAtualizados = req.body;
-        if (dados.status && !['aberto', 'solucionado'].includes(dados.status)) {
+        if (dadosAtualizados.status && !['aberto', 'solucionado'].includes(dadosAtualizados.status)) {
             return res.status(400).json({
             errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
             });
