@@ -1,251 +1,228 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 8 créditos restantes para usar o sistema de feedback AI.
+Você tem 7 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para VitorChagas-mcl:
 
-Nota final: **16.8/100**
+Nota final: **73.7/100**
 
-# Feedback para você, VitorChagas-mcl! 🚓✨
+# Feedback para você, VitorChagas-mcl! 🚓👮‍♂️
 
-Olá, Vitor! Primeiro, parabéns pela coragem de encarar esse desafio complexo de construir uma API REST completa para o Departamento de Polícia! 🎉 Isso já mostra que você está disposto a aprender e crescer como dev — e isso é o mais importante!
+Olá, Vitor! Primeiro, quero te parabenizar pelo empenho e pelo que você já conquistou nesse desafio! 🎉 Construir uma API RESTful com Node.js e Express.js não é tarefa simples, e você conseguiu implementar os endpoints principais para os recursos `/agentes` e `/casos`, incluindo todos os métodos HTTP (GET, POST, PUT, PATCH, DELETE). Isso é um baita avanço! Além disso, você organizou seu código em rotas, controladores e repositórios, seguindo uma arquitetura modular que facilita a manutenção e a escalabilidade. 👏
 
----
+Também notei que você implementou as validações básicas e o tratamento de erros, com status codes apropriados (como 201 para criação e 404 para não encontrado). Isso mostra que você está entendendo o fluxo HTTP e a importância da comunicação clara entre cliente e servidor.
 
-## 🎯 O que você mandou bem?
-
-- Sua estrutura de pastas está muito bem organizada, com rotas, controllers e repositories separados, exatamente como a arquitetura MVC que é recomendada para projetos Node.js escaláveis. Isso é fundamental para manter o código limpo e fácil de manter! 👏
-  
-- Você implementou os arquivos de rotas (`agentesRoutes.js` e `casosRoutes.js`) corretamente, usando `express.Router()` e conectando os controllers. Isso mostra que você entendeu a importância de modularizar o código.
-
-- Seu servidor (`server.js`) está configurado para usar JSON no body das requisições e tem tratamento para rotas não encontradas e erros globais, o que é excelente para uma API robusta.
-
-- Você conseguiu implementar algumas respostas de erro 404 para recursos não encontrados, o que indica que já compreende a importância da validação de dados.
-
-- Também houve avanços nos bônus, o que é super legal! Parabéns por tentar implementar filtros e mensagens customizadas, mesmo que ainda precisem de ajustes.
+Ah, e parabéns pelos bônus que você conseguiu! 🎯 Você implementou filtros simples para os casos, buscas por agentes responsáveis, ordenação por data de incorporação, e até mensagens de erro customizadas para argumentos inválidos. Isso demonstra que você foi além do básico e se dedicou a entregar uma API mais robusta. Muito bom!
 
 ---
 
-## 🚨 Onde podemos melhorar? Vamos destrinchar juntos!
+## Agora, vamos juntos analisar alguns pontos que podem ser melhorados para deixar sua API ainda mais sólida e profissional. 🔍
 
-### 1. Problema fundamental: Manipulação incorreta dos dados no Controller (e Repositório) — IDs e payloads
+### 1. Validação de Dados — O coração da confiança na API ❤️‍🔥
 
-Ao analisar seu `agentesController.js` e `casosController.js`, percebi que a criação dos novos recursos está com um erro sério na forma como você está tratando os dados e os IDs.
+Eu percebi que, embora você tenha implementado validações para campos obrigatórios no payload, existem algumas falhas importantes que impactam diretamente a qualidade dos dados e a segurança da sua API. Vamos destrinchar algumas delas:
 
-Por exemplo, no seu `agentesController.js`:
+#### a) Validação da dataDeIncorporacao do agente
 
-```js
-create(req, res) {
-    const novoAgente = req.body;
-    novoAgente = uuid.v4();  // <-- Aqui está o problema
-    const agenteCriado = agentesRepository.create(novoAgente);
-    res.status(201).json(agenteCriado);
-},
-```
+No `agentesController.js`, você exige que o campo `dataDeIncorporacao` exista, mas não valida se está no formato correto `YYYY-MM-DD` nem se a data é válida (por exemplo, não aceita datas futuras). Isso pode permitir dados inconsistentes, como datas mal formatadas ou impossíveis.
 
-Você está sobrescrevendo `novoAgente` (que deveria ser um objeto com dados do agente) com apenas um UUID, ou seja, uma string. Depois, passa essa string para o repositório, que espera um objeto com propriedades para criar o agente.
-
-O correto seria gerar o `id` dentro do objeto `novoAgente`, e não substituir todo o objeto pelo ID. Algo assim:
+**Por exemplo, no seu código:**
 
 ```js
-create(req, res) {
-    const novoAgente = req.body;
-    novoAgente.id = uuid.v4();
-    // Aqui você pode validar se os campos obrigatórios existem
-    const agenteCriado = agentesRepository.create(novoAgente);
-    res.status(201).json(agenteCriado);
-},
+if (!nome || !dataDeIncorporacao || !cargo) {
+    return res.status(400).json({
+        status: 400,
+        message: "Parâmetros inválidos",
+        errors: [
+            nome ? null : { field: "nome", message: "Nome é obrigatório" },
+            dataDeIncorporacao ? null : { field: "dataDeIncorporacao", message: "Data é obrigatória e deve estar no formato YYYY-MM-DD" },
+            cargo ? null : { field: "cargo", message: "Cargo é obrigatório" }
+        ].filter(Boolean)
+    });
+}
 ```
 
-O mesmo erro acontece no `casosController.js`:
+Aqui você só verifica se o campo existe, mas não se ele é válido. Isso permite, por exemplo, que alguém envie `"dataDeIncorporacao": "2025-12-01"` (que está no futuro) ou `"dataDeIncorporacao": "01-12-2023"` (formato errado).
+
+**Como melhorar?**
+
+Você pode usar uma função para validar o formato da data e garantir que não seja futura, algo assim:
 
 ```js
-findById(req, res) {
-    const id = uuid.v4();  // <-- Você está criando um novo UUID aqui, em vez de pegar o ID da URL
-    const caso = casosRepository.findById(id);
-    // ...
-},
-
-create(req, res) {
-    const novoCaso = req.body;
-    novoCaso = uuid.v4();  // <-- Novamente, substituindo o objeto pelo UUID
-    if (!novoCaso.titulo || !novoCaso.descricao || !novoCaso.status || !novoCaso.agente_id) {
-        return res.status(400).json({ message: 'Campos obrigatórios faltando' });
-    }
-    // ...
-},
+function isValidDate(dateString) {
+    // RegEx para formato YYYY-MM-DD
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(dateString)) return false;
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return false; // data inválida
+    const today = new Date();
+    if (date > today) return false; // data futura
+    return true;
+}
 ```
 
-No `findById`, você deve pegar o ID da URL (`req.params.id`), não gerar um novo UUID toda vez. E no `create`, precisa manter o objeto, adicionar o `id` a ele, e só depois validar os campos.
+E no seu controller, você pode usar essa função para validar:
+
+```js
+if (!nome || !dataDeIncorporacao || !cargo || !isValidDate(dataDeIncorporacao)) {
+    // Retorna erro 400 com mensagem adequada
+}
+```
+
+Isso evita que dados inválidos entrem na sua API.
+
+**Recomendo fortemente este vídeo para aprofundar sua validação e tratamento de erros:**  
+https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
 
 ---
 
-### 2. Validação de IDs UUID
+#### b) Prevenção de alteração do campo `id` nos recursos
 
-Vi que você tem uma função `isValidUUID` no repositório, mas não está usando ela para validar os IDs que chegam nas rotas. Isso é muito importante para evitar erros e garantir que o ID tenha o formato correto antes de tentar buscar no array.
+Outra questão importante: percebi que nos métodos PUT e PATCH de agentes e casos, você permite que o campo `id` seja alterado. Isso é perigoso, pois o `id` deve ser uma chave única e imutável para identificar o recurso.
 
-Por exemplo, no `findById` dos controllers, você pode fazer:
+Por exemplo, no `agentesRepository.js`, seu método `update` faz:
 
 ```js
-const { isValidUUID } = require('../repositories/agentesRepository');
+agentes[index] = { ...agentes[index], ...agenteAtualizado };
+```
 
-findById(req, res) {
+Se `agenteAtualizado` contiver um `id`, ele vai sobrescrever o original, o que não é desejado.
+
+**Como corrigir?**
+
+No controller, antes de passar os dados para atualizar, remova o campo `id` do payload:
+
+```js
+delete dadosAtualizados.id;
+```
+
+Ou no próprio repositório, ignore o `id` na atualização.
+
+Isso garante que o `id` nunca será alterado.
+
+---
+
+#### c) Validação do campo `status` em casos
+
+No recurso `/casos`, o campo `status` deve aceitar apenas valores específicos, por exemplo, `"aberto"` ou `"solucionado"`. No seu código, você não está validando essa restrição, permitindo que qualquer valor seja inserido.
+
+No `casosController.js`, no método `create`, você só verifica se o campo existe:
+
+```js
+if (!novoCaso.titulo || !novoCaso.descricao || !novoCaso.status || !novoCaso.agente_id) {
+    // retorna erro
+}
+```
+
+Mas não valida se `novoCaso.status` é um dos valores permitidos.
+
+**Como melhorar?**
+
+Você pode adicionar uma validação assim:
+
+```js
+const statusPermitidos = ['aberto', 'solucionado'];
+
+if (!statusPermitidos.includes(novoCaso.status)) {
+    return res.status(400).json({
+        status: 400,
+        message: "Status inválido",
+        errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
+    });
+}
+```
+
+Assim, evita que dados inválidos poluam seu sistema.
+
+---
+
+### 2. Tratamento dos erros de payload inválido no PUT e PATCH
+
+Vi que alguns testes esperavam que você retornasse **status 400** quando o payload enviado para atualizar (PUT/PATCH) estivesse em formato incorreto, mas isso não está acontecendo.
+
+Por exemplo, no `agentesController.js`, o método `update`:
+
+```js
+update(req, res) {
     const id = req.params.id;
-    if (!isValidUUID(id)) {
-        return res.status(400).json({ message: 'ID inválido' });
+    const dadosAtualizados = req.body;
+    const agente = agentesRepository.update(id, dadosAtualizados);
+    if (!agente) {
+        return res.status(404).send('Agente não encontrado');
     }
-    // continuar a busca...
+    res.json(agente);
 }
 ```
 
-Essa validação ajuda a garantir que o cliente da API está enviando dados no formato esperado, e melhora a confiabilidade do seu serviço.
+Aqui, você não está validando se `dadosAtualizados` tem os campos obrigatórios nem se estão no formato correto antes de atualizar.
+
+**Por que isso importa?**
+
+Sem essa validação, você pode atualizar um agente com dados incompletos ou errados, quebrando a integridade da sua API.
+
+**Como resolver?**
+
+Implemente validações semelhantes às do `create`, mas adaptadas para `update` (que pode aceitar todos os campos obrigatórios para PUT, e campos parciais para PATCH). Se a validação falhar, retorne status 400 com detalhes do erro.
 
 ---
 
-### 3. Funções de Repositório com lógica de resposta HTTP
+### 3. Organização e Estrutura de Diretórios — você mandou bem, só um toque! 📂
 
-No seu `casosRepository.js` e `agentesRepository.js`, algumas funções (`create`, `partialUpdate`) estão recebendo `req` e `res` e tentando enviar respostas HTTP, como:
+Sua estrutura está quase perfeita, mas notei que no seu projeto você tem uma pasta `utils` com um arquivo `errorHandler.js` que não está sendo usado no código que você enviou. Além disso, no `package.json`, você tem uma dependência chamada `"router": "^2.2.0"` que não é necessária, pois o Express já tem o `Router` embutido.
+
+**Por que isso importa?**
+
+- Ter arquivos não utilizados pode confundir quem for manter seu projeto.
+- Dependências desnecessárias aumentam o tamanho do projeto e podem causar conflitos.
+
+**Sugestão:**
+
+- Use o `errorHandler.js` para centralizar seu middleware de tratamento de erros (você já tem um middleware no `server.js`, mas pode migrar para o `utils/errorHandler.js` para organizar melhor).
+- Remova a dependência `"router"` do `package.json`.
+
+---
+
+### 4. Pequenos ajustes para deixar seu projeto ainda mais profissional 🚀
+
+- No seu middleware de tratamento de rotas não encontradas (`404`), em vez de enviar texto puro, recomendo enviar um JSON com uma mensagem padronizada, para manter consistência:
 
 ```js
-function create(req, res) {
-    novoCaso.id = uuid.v4();
-    if (!novoCaso.titulo || !novoCaso.descricao || !novoCaso.status || !novoCaso.agente_id) {
-        return res.status(400).json({ message: 'Campos obrigatórios faltando' });
-    }
-    // ...
-}
+app.use((req, res) => {
+    res.status(404).json({ status: 404, message: 'Rota não encontrada' });
+});
 ```
 
-Isso quebra a separação de responsabilidades! Os repositórios devem ser responsáveis **apenas por manipular os dados em memória**, nunca por lidar com requisições ou respostas HTTP.
-
-A validação e o envio de status devem ficar nos **controllers**. No repositório, você deve receber o objeto já validado e simplesmente salvar ou atualizar os dados.
+- No `casosRepository.js`, você adiciona a propriedade `data` com a data atual no método `create`. Seria interessante documentar isso e garantir que esse campo seja consistente em toda a API.
 
 ---
 
-### 4. Métodos `partialUpdate` nos Controllers apontando para Repositórios errados
+## Recursos que recomendo para você seguir evoluindo:
 
-No `agentesController.js`, o método `partialUpdate` está chamando o repositório de `casos`:
-
-```js
-partialUpdate(req, res) {
-    const id = req.params.id;
-    const dadosParciais = req.body;
-    const casoAtualizado = casosRepository.update(id, dadosParciais);  // <-- erro aqui!
-    if (!casoAtualizado) {
-        return res.status(404).send('Caso não encontrado');
-    }
-
-    res.json(casoAtualizado);
-},
-```
-
-Aqui você está misturando agentes com casos, o que pode gerar erros e confusão. O correto é chamar o repositório de agentes:
-
-```js
-const agenteAtualizado = agentesRepository.update(id, dadosParciais);
-if (!agenteAtualizado) {
-    return res.status(404).send('Agente não encontrado');
-}
-res.json(agenteAtualizado);
-```
-
----
-
-### 5. Função `partialUpdate` duplicada e com lógica incorreta no repositório de agentes
-
-No `agentesRepository.js` você tem uma função `partialUpdate` que tenta acessar `req` e `res` e usa `agenteRepository` (com "e" faltando):
-
-```js
-function partialUpdate(req, res) {
-    const id = req.params.id;
-    const dadosParciais = req.body;
-    const agenteAtualizado = agenteRepository.update(id, dadosParciais);
-    if (!agenteAtualizado) {
-        return res.status(404).send('Caso não encontrado');
-    }
-
-    res.json(casoAtualizado);
-}
-```
-
-Isso não faz sentido para um repositório, que não deve lidar com requisições HTTP (req, res). Além disso, o objeto `agenteRepository` não existe (nome errado), e você está retornando `casoAtualizado` que também não existe aqui.
-
-Sugestão: remova essa função do repositório e mantenha essa lógica no controller, que é o lugar certo para lidar com requisições e respostas.
-
----
-
-### 6. Penalidade importante: IDs usados não são UUIDs válidos
-
-Vi que você está usando IDs estáticos para agentes e casos, o que é ótimo, mas os testes indicaram que IDs usados não são UUIDs válidos. Isso pode estar ligado ao problema do seu controller sobrescrever os objetos com strings UUID e não criar objetos completos.
-
-Além disso, é fundamental validar os IDs recebidos nas rotas para garantir que eles estejam no formato UUID correto.
-
----
-
-### 7. Pequenos detalhes importantes para melhorar
-
-- No seu `create` do agente, você está usando `novoAgente.data = new Date().toISOString();` no repositório, mas o campo esperado no desafio é `dataDeIncorporacao`. Atenção para nomes de campos para manter a consistência.
-
-- O arquivo `.gitignore` não está ignorando a pasta `node_modules`, o que pode deixar seu repositório pesado e desorganizado. É uma boa prática adicionar essa pasta lá.
-
----
-
-## 💡 Recomendações de estudos para você
-
-Para te ajudar a corrigir esses pontos e entender melhor os conceitos envolvidos, recomendo fortemente que você dê uma olhada nesses conteúdos:
-
-- **Express.js e API REST:**  
+- Validação de dados em APIs Node.js/Express:  
+  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_  
+- Documentação oficial do Express.js sobre roteamento (para entender melhor `express.Router()`):  
+  https://expressjs.com/pt-br/guide/routing.html  
+- Fundamentos de API REST e Express.js para consolidar conceitos:  
   https://youtu.be/RSZHvQomeKE  
-  (Aprenda como criar endpoints, usar middlewares e manipular requisições e respostas)
-
-- **Arquitetura MVC em Node.js:**  
-  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH  
-  (Entenda como organizar seu código em controllers, rotas e repositórios)
-
-- **Validação de dados e status codes HTTP:**  
+- Entendendo status code 400 e 404 e como usá-los corretamente:  
   https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
   https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404  
-  (Esses artigos são essenciais para entender quando e como retornar erros 400 e 404)
-
-- **Manipulação de arrays em memória:**  
-  https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI  
-  (Para garantir que você sabe como buscar, atualizar e deletar itens nos seus arrays)
 
 ---
 
-## 📝 Resumo rápido dos pontos para focar:
+## Resumo rápido dos principais pontos para você focar:
 
-- [ ] Corrigir a criação e manipulação dos objetos `novoAgente` e `novoCaso` para não sobrescrever com o UUID, mas sim adicionar o `id` dentro do objeto.
-
-- [ ] Validar IDs UUID recebidos nas rotas antes de buscar os dados.
-
-- [ ] Remover lógica de requisição/resposta HTTP dos repositórios; deixe isso para os controllers.
-
-- [ ] Corrigir chamadas incorretas de repositórios nos controllers (ex: chamar `casosRepository` dentro de `agentesController`).
-
-- [ ] Ajustar nomes dos campos para manter consistência (`dataDeIncorporacao` ao invés de `data`).
-
-- [ ] Adicionar `.gitignore` para ignorar `node_modules`.
-
-- [ ] Revisar e entender bem a separação de responsabilidades entre controllers e repositórios.
+- ✅ Continue usando arquitetura modular (rotas, controllers, repositories), está muito boa!  
+- 🔴 **Valide melhor os campos de entrada**, especialmente datas (`dataDeIncorporacao`), status de casos e evite aceitar IDs alterados.  
+- 🔴 **Implemente validação de payload para PUT e PATCH**, retornando status 400 quando os dados estiverem incorretos.  
+- 🔴 Padronize as respostas de erro, enviando JSON em todos os casos, inclusive para rotas não encontradas.  
+- 🔴 Organize dependências e arquivos para evitar código e pacotes desnecessários.  
 
 ---
 
-Vitor, você está no caminho certo, e com esses ajustes seu código vai melhorar muito! 🚀 Continue praticando, lendo a documentação e testando bastante. Estou aqui torcendo por você! Se precisar, volte para tirar dúvidas — vamos juntos nessa jornada! 💪👊
+Vitor, seu projeto está muito bem encaminhado, e com esses ajustes você vai deixar sua API robusta e profissional, pronta para qualquer desafio! 💪 Continue assim, com essa dedicação e cuidado nos detalhes. A prática constante é o caminho para a maestria. Estou aqui torcendo pelo seu sucesso! 🚀✨
 
-Um abraço de mentor,  
-Seu Code Buddy 🤖❤️
-
----
-
-Se quiser, aqui estão os links para os vídeos que vão ajudar você a destravar essas questões:
-
-- [Express.js e API REST](https://youtu.be/RSZHvQomeKE)  
-- [Arquitetura MVC em Node.js](https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH)  
-- [Validação de dados e status HTTP](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400)  
-- [Manipulação de arrays em memória](https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI)  
-
-Bora codar! 🚀✨
+Se precisar, volte aqui para conversarmos mais sobre qualquer ponto, combinado? Abraço forte! 🤗👊
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
