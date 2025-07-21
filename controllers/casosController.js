@@ -15,11 +15,23 @@ const agentesRepository = require('../repositories/agentesRepository');
 
 module.exports = {
     findAll(req, res) {
-        const { status } = req.query;
+        const {titulo, descricao, status, agente_id } = req.query;
         let casos = casosRepository.findAll();
 
         if (status) {
             casos = casos.filter(caso => caso.status === status);
+        }
+
+        if (agente_id) {
+            casos = casos.filter(caso => caso.agente_id === agente_id);
+        }
+
+        if(titulo){
+            casos = casos.filter(caso => casos.titulo === titulo);
+        }
+
+        if(descricao){
+            casos = casos.filter(caso => casos.descricao === descricao);
         }
 
         res.json(casos);
@@ -66,20 +78,43 @@ module.exports = {
     },
 
     
-
     update(req, res) {
         const id = req.params.id;
         const dadosAtualizados = { ...req.body };
-        if ('id' in dadosAtualizados) {
-            delete dadosAtualizados.id;
+        if ('id' in dadosAtualizados) delete dadosAtualizados.id;
+
+        const errors = [];
+
+        if (!dadosAtualizados.titulo) {
+            errors.push({ field: "titulo", message: "Título é obrigatório" });
         }
-        if (dadosAtualizados.status && !['aberto', 'solucionado'].includes(dadosAtualizados.status)) {
-            return res.status(400).json({
-            errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
-            });
+
+        if (!dadosAtualizados.descricao) {
+            errors.push({ field: "descricao", message: "Descrição é obrigatória" });
         }
+
+        if (!dadosAtualizados.status) {
+            errors.push({ field: "status", message: "Status é obrigatório" });
+        } else if (!['aberto', 'solucionado'].includes(dadosAtualizados.status)) {
+            errors.push({ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" });
+        }
+
+        if (!dadosAtualizados.agente_id) {
+            errors.push({ field: "agente_id", message: "Agente é obrigatório" });
+        } else {
+            const agenteExiste = agentesRepository.findById(dadosAtualizados.agente_id);
+            if (!agenteExiste) {
+                return res.status(404).json({ message: 'Agente não encontrado para o agente_id informado' });
+            }
+        }
+
+        if (errors.length > 0) {
+            return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+        }
+
         const caso = casosRepository.update(id, dadosAtualizados);
         if (!caso) return res.status(404).send('Caso não encontrado');
+
         res.json(caso);
     },
 

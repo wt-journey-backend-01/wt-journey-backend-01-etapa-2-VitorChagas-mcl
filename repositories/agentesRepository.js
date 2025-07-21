@@ -27,10 +27,12 @@ function update(id, agenteAtualizado) {
     const index = agentes.findIndex(agente => agente.id === id);
     if (index === -1) return null;
 
-    agentes[index] = { ...agentes[index], ...agenteAtualizado };
-    agentes[index].id = id
+    const { id: _, ...dadosSemId } = agenteAtualizado; 
+    agentes[index] = { ...agentes[index], ...dadosSemId };
+    agentes[index].id = id;
     return agentes[index];
 }
+
 
 function deleteAgente(id) {
     const index = agentes.findIndex(agente => agente.id === id);

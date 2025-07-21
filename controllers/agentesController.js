@@ -10,12 +10,28 @@ function isValidDate(dateString) {
 
 module.exports = {
     findAll(req, res) {
-        const agentes = agentesRepository.findAll();
-        if (!agentes || agentes.length === 0) {
-            return res.status(404).send('Nenhum agente encontrado');
+        let agentes = agentesRepository.findAll();
+        const { cargo, sort } = req.query;
+
+        if (cargo) {
+            agentes = agentes.filter(agente =>
+                agente.cargo.toLowerCase() === cargo.toLowerCase()
+            );
         }
+
+        if (sort === 'dataDeIncorporacao') {
+            agentes = agentes.sort((a, b) =>
+                new Date(a.dataDeIncorporacao) - new Date(b.dataDeIncorporacao)
+            );
+        } else if (sort === '-dataDeIncorporacao') {
+            agentes = agentes.sort((a, b) =>
+                new Date(b.dataDeIncorporacao) - new Date(a.dataDeIncorporacao)
+            );
+        }
+
         res.json(agentes);
     },
+
 
     findById(req, res) {
         const id = req.params.id;
@@ -73,9 +89,29 @@ module.exports = {
     partialUpdate(req, res) {
         const id = req.params.id;
         const dadosAtualizados = { ...req.body };
+
         if ('id' in dadosAtualizados) {
             delete dadosAtualizados.id;
         }
+
+        const errors = [];
+
+        if ('nome' in dadosAtualizados && !dadosAtualizados.nome) {
+            errors.push({ field: "nome", message: "Nome não pode ser vazio" });
+        }
+
+        if ('cargo' in dadosAtualizados && !dadosAtualizados.cargo) {
+            errors.push({ field: "cargo", message: "Cargo não pode ser vazio" });
+        }
+
+        if ('dataDeIncorporacao' in dadosAtualizados && !isValidDate(dadosAtualizados.dataDeIncorporacao)) {
+            errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+        }
+
+        if (errors.length > 0) {
+            return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+        }
+
         const agenteAtualizado = agentesRepository.update(id, dadosAtualizados);
         if (!agenteAtualizado) {
             return res.status(404).send('Agente não encontrado');

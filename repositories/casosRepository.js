@@ -28,7 +28,9 @@ function create(novoCaso) {
 function update(id, dadosAtualizados) {
     const index = casos.findIndex(caso => caso.id === id);
     if (index === -1) return null;
-    casos[index] = { ...casos[index], ...dadosAtualizados };
+
+    const { id: _, ...dadosSemId } = dadosAtualizados;
+    casos[index] = { ...casos[index], ...dadosSemId };
     casos[index].id = id;
     return casos[index];
 }
