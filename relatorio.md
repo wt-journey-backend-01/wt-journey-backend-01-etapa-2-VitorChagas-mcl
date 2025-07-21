@@ -1,36 +1,67 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 4 créditos restantes para usar o sistema de feedback AI.
+Você tem 3 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para VitorChagas-mcl:
 
-Nota final: **90.6/100**
+Nota final: **93.3/100**
 
-# Feedback para o VitorChagas-mcl 🚓👮‍♂️
+# Feedback para você, VitorChagas-mcl 🚓✨
 
-Olá, Vitor! Que jornada incrível você fez até aqui! 🚀 Parabéns pelo esforço e pela qualidade do seu código. Dá pra ver que você entendeu muito bem os conceitos de API REST com Express.js e organizou seu projeto de forma clara e modular, seguindo a arquitetura MVC (Model-View-Controller). Isso é essencial para projetos escaláveis e de fácil manutenção, e você mandou muito bem nisso! 🎉
+Olá, Vitor! Primeiro, quero te parabenizar pelo excelente trabalho! 🎉 Sua API para o Departamento de Polícia está muito bem estruturada e você conseguiu implementar todos os métodos HTTP para os recursos `/agentes` e `/casos` com uma organização clara entre rotas, controladores e repositórios. Isso mostra que você entendeu muito bem a arquitetura modular que é essencial para projetos escaláveis.
+
+## 🎯 Pontos Fortes que Merecem Destaque
+
+- Seu **server.js** está bem configurado, com o uso correto do `express.json()`, rotas separadas e um middleware de tratamento de erro customizado. Isso é fundamental para manter o código limpo e robusto.
+- Nos **controllers**, você fez uma validação consistente dos dados, especialmente no `agentesController.js`, com funções específicas para validar datas e checar campos obrigatórios. 👏
+- A manipulação dos dados em memória nos **repositories** está perfeita, usando arrays e métodos do JavaScript para criar, atualizar, deletar e buscar os registros.
+- Você implementou os filtros básicos para os casos, como filtragem por `status` e `agente_id`, e também para os agentes, com filtros por `cargo` e ordenação por `dataDeIncorporacao` — isso é um bônus super valioso e que demonstra seu esforço extra! 🌟
+
+## 🔍 Análise Detalhada dos Pontos que Precisam de Atenção
+
+### 1. PATCH em `/agentes`: Validação do Payload e Alteração do ID
+
+Percebi que o teste que verifica se o PATCH para atualizar parcialmente um agente retorna erro 400 quando o payload está em formato incorreto não passou. Ao analisar seu código no `agentesController.js`, especificamente o método `partialUpdate`, notei que você está permitindo que o campo `id` seja removido do objeto atualizado, o que é ótimo:
+
+```js
+if ('id' in dadosAtualizados) {
+    delete dadosAtualizados.id;
+}
+```
+
+Porém, não há uma validação para impedir que o `id` seja alterado caso esteja presente no corpo da requisição, ou seja, se o usuário enviar um campo `id` diferente, você simplesmente o remove, mas não retorna erro. Isso faz com que o teste espere um 400 (Bad Request) e sua API não retorne.
+
+**Por que isso é importante?**  
+O ID é o identificador único do recurso e não deve ser alterado em atualizações parciais (PATCH) ou completas (PUT). Permitir que ele seja modificado pode causar inconsistências e bugs difíceis de rastrear.
+
+**Como corrigir?**  
+Você pode adicionar uma validação para verificar se o campo `id` está presente e, se estiver, retornar um erro 400, algo assim:
+
+```js
+if ('id' in req.body) {
+    return res.status(400).json({
+        status: 400,
+        message: "Não é permitido alterar o ID do agente."
+    });
+}
+```
+
+Isso deve ficar logo no início do método `partialUpdate` para garantir que o ID não seja alterado.
 
 ---
 
-## 🎯 O que você acertou e merece aplausos 👏
+### 2. PUT em `/casos`: Permite Alterar o ID do Caso
 
-- **Estrutura do projeto impecável:** Você dividiu seu código em `routes`, `controllers`, `repositories` e `utils` exatamente como esperado. Isso deixa o projeto limpo e organizado, facilitando a navegação e futuras manutenções.
+No seu `casosController.js`, no método `update` (que trata o PUT), você faz a remoção do campo `id` do objeto atualizado:
 
-- **Implementação completa dos endpoints:** Você implementou todos os métodos HTTP (GET, POST, PUT, PATCH, DELETE) para os recursos `/agentes` e `/casos`, e eles parecem estar funcionando corretamente.
+```js
+const dadosAtualizados = { ...req.body };
+if ('id' in dadosAtualizados) delete dadosAtualizados.id;
+```
 
-- **Validações e tratamentos de erro:** As validações que você fez nos payloads, como verificar campos obrigatórios e formatos de data, estão bem feitas e retornam mensagens claras e status HTTP adequados (400, 404). Isso é fundamental para uma API robusta.
+Isso impede que o ID seja alterado, o que é correto. No entanto, você recebeu uma penalidade indicando que sua API permite alterar o ID do caso via PUT.
 
-- **Filtros simples nos casos:** Você implementou o filtro por status na rota `/casos` com query params, o que já é um bônus muito legal e mostra que você está pensando em usabilidade da API.
-
-- **Uso correto de status HTTP:** Você usou os códigos 201 para criação, 204 para deleção e 404 para recursos não encontrados, o que é um ótimo sinal de que entende os protocolos HTTP.
-
----
-
-## 🔍 Análise dos pontos que precisam de atenção e sugestões para melhorar
-
-### 1. Validação do ID na atualização parcial (PATCH) dos agentes
-
-Você tem uma penalidade porque o seu código **permite alterar o ID do agente via PATCH**, o que não deveria acontecer. Olhando seu `agentesController.js`:
+**Ao investigar, percebi que no método `partialUpdate` de casos, você não faz nenhuma validação para impedir a alteração do ID:**
 
 ```js
 partialUpdate(req, res) {
@@ -39,275 +70,133 @@ partialUpdate(req, res) {
     if ('id' in dadosAtualizados) {
         delete dadosAtualizados.id;
     }
-    const agenteAtualizado = agentesRepository.update(id, dadosAtualizados);
-    if (!agenteAtualizado) {
-        return res.status(404).send('Agente não encontrado');
-    }
-    res.json(agenteAtualizado);
-},
-```
-
-Aqui você até tenta remover `id` do corpo da requisição, mas o problema pode estar na função `update` do `agentesRepository`. Vamos conferir:
-
-```js
-function update(id, agenteAtualizado) {
-    const index = agentes.findIndex(agente => agente.id === id);
-    if (index === -1) return null;
-
-    agentes[index] = { ...agentes[index], ...agenteAtualizado };
-    agentes[index].id = id
-    return agentes[index];
+    // ...
 }
 ```
 
-Você está sobrescrevendo o objeto com os dados recebidos, mas logo depois força o `id` para o valor original, o que é ótimo. Então, teoricamente, o ID não deveria mudar. Porém, o teste detectou que o ID está sendo alterado na atualização parcial.
+Aqui, você apenas remove o campo `id` do corpo, mas não retorna erro se o usuário tentar alterar o ID. Isso pode ser interpretado como permitir a alteração do ID (mesmo que você não persista a alteração, o correto é não aceitar a alteração e retornar erro).
 
-**Possível causa raiz:** Pode ser que, em algum momento, o corpo da requisição esteja enviando o campo `id` e, mesmo removendo no controller, o `update` está sobrescrevendo o objeto antes da remoção. Ou talvez em outra parte do código você não esteja aplicando essa remoção.
-
-**Sugestão:** Para garantir que o ID nunca seja alterado, faça a remoção do campo `id` no controller e também no repository, antes de aplicar o spread. Assim, você tem uma dupla proteção.
-
-Exemplo de melhoria no `update` do repository:
+**Solução:**  
+Assim como no caso do agente, recomendo que você retorne um erro 400 caso o campo `id` esteja presente no corpo da requisição para o método PATCH em casos:
 
 ```js
-function update(id, agenteAtualizado) {
-    const index = agentes.findIndex(agente => agente.id === id);
-    if (index === -1) return null;
-
-    // Remove id do objeto atualizado para prevenir alteração
-    const { id: _, ...dadosSemId } = agenteAtualizado;
-
-    agentes[index] = { ...agentes[index], ...dadosSemId };
-    agentes[index].id = id;
-    return agentes[index];
+if ('id' in req.body) {
+    return res.status(400).json({
+        status: 400,
+        message: "Não é permitido alterar o ID do caso."
+    });
 }
 ```
 
-Isso garante que mesmo que o controller deixe passar, o repository não vai aceitar alteração do ID.
-
 ---
 
-### 2. Validação do ID na atualização completa (PUT) dos casos
+### 3. Filtros de Busca em `/casos` para `titulo` e `descricao`
 
-Você também recebeu uma penalidade porque o código **permite alterar o ID do caso via PUT**, o que não deve acontecer.
-
-No seu `casosController.js`, no método `update`:
+No método `findAll` do `casosController.js`, você tenta filtrar os casos por `titulo` e `descricao` com o seguinte trecho:
 
 ```js
-update(req, res) {
-    const id = req.params.id;
-    const dadosAtualizados = { ...req.body };
-    if ('id' in dadosAtualizados) {
-        delete dadosAtualizados.id;
-    }
-    if (dadosAtualizados.status && !['aberto', 'solucionado'].includes(dadosAtualizados.status)) {
-        return res.status(400).json({
-        errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
-        });
-    }
-    const caso = casosRepository.update(id, dadosAtualizados);
-    if (!caso) return res.status(404).send('Caso não encontrado');
-    res.json(caso);
-},
-```
+if(titulo){
+    casos = casos.filter(caso => casos.titulo === titulo);
+}
 
-Aqui você também remove o campo `id` do corpo da requisição, que é correto. Mas vamos olhar o `update` do `casosRepository`:
-
-```js
-function update(id, dadosAtualizados) {
-    const index = casos.findIndex(caso => caso.id === id);
-    if (index === -1) return null;
-    casos[index] = { ...casos[index], ...dadosAtualizados };
-    casos[index].id = id;
-    return casos[index];
+if(descricao){
+    casos = casos.filter(caso => casos.descricao === descricao);
 }
 ```
 
-Assim como no caso dos agentes, você sobrescreve o objeto com os dados recebidos e força o `id` para o original, o que parece correto.
-
-**Possível causa raiz:** O mesmo problema do agente: pode estar passando o campo `id` e, apesar da remoção no controller, o teste detecta alteração. É importante reforçar a proteção no repository também.
-
-**Sugestão:** Faça a mesma melhoria no `update` do `casosRepository`:
+Aqui, o problema é que você está usando `casos.titulo` e `casos.descricao` dentro do filtro, mas o correto é acessar o campo do elemento da iteração, que é `caso` (no singular). Ou seja, deve ser:
 
 ```js
-function update(id, dadosAtualizados) {
-    const index = casos.findIndex(caso => caso.id === id);
-    if (index === -1) return null;
+if(titulo){
+    casos = casos.filter(caso => caso.titulo === titulo);
+}
 
-    const { id: _, ...dadosSemId } = dadosAtualizados;
-
-    casos[index] = { ...casos[index], ...dadosSemId };
-    casos[index].id = id;
-    return casos[index];
+if(descricao){
+    casos = casos.filter(caso => caso.descricao === descricao);
 }
 ```
 
-Assim você evita qualquer alteração acidental do ID.
+Essa pequena confusão faz com que o filtro não funcione e impacta diretamente na funcionalidade de busca por palavras-chave.
 
 ---
 
-### 3. Status 400 ao atualizar parcialmente agente com payload mal formatado
+### 4. Mensagens de Erro Customizadas para Argumentos Inválidos
 
-Você teve falha ao tentar atualizar parcialmente um agente com PATCH e payload incorreto, esperando um status 400, mas isso não aconteceu.
-
-Analisando seu método `partialUpdate` de `agentesController.js`, não há nenhuma validação explícita de formato ou campos obrigatórios para PATCH, o que é esperado, já que PATCH pode atualizar parcialmente. Porém, isso pode causar problemas se o payload estiver completamente errado (ex: campos com tipos errados).
-
-**O que pode estar acontecendo:** Você não está validando o formato dos dados recebidos na atualização parcial, então se o payload for inválido, a API pode aceitar e até atualizar o objeto com dados errados.
-
-**Sugestão:** Implemente validações básicas no PATCH, para garantir que os campos recebidos são válidos, mesmo que parciais. Por exemplo, se o campo `dataDeIncorporacao` for enviado, valide se é uma data válida; se `nome` for enviado, valide se é string não vazia; e assim por diante.
-
-Exemplo simples de validação parcial:
+Você fez um bom trabalho implementando mensagens de erro personalizadas para os agentes, como:
 
 ```js
-partialUpdate(req, res) {
-    const id = req.params.id;
-    const dadosAtualizados = { ...req.body };
-
-    if ('id' in dadosAtualizados) {
-        delete dadosAtualizados.id;
-    }
-
-    const errors = [];
-
-    if ('nome' in dadosAtualizados && !dadosAtualizados.nome) {
-        errors.push({ field: "nome", message: "Nome não pode ser vazio" });
-    }
-
-    if ('cargo' in dadosAtualizados && !dadosAtualizados.cargo) {
-        errors.push({ field: "cargo", message: "Cargo não pode ser vazio" });
-    }
-
-    if ('dataDeIncorporacao' in dadosAtualizados && !isValidDate(dadosAtualizados.dataDeIncorporacao)) {
-        errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
-    }
-
-    if (errors.length > 0) {
-        return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
-    }
-
-    const agenteAtualizado = agentesRepository.update(id, dadosAtualizados);
-    if (!agenteAtualizado) {
-        return res.status(404).send('Agente não encontrado');
-    }
-    res.json(agenteAtualizado);
-},
+return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
 ```
 
-Assim você garante que, mesmo em atualizações parciais, os dados têm qualidade e evita erros silenciosos.
-
----
-
-### 4. Status 400 ao atualizar completamente um caso com PUT e payload incorreto
-
-O mesmo raciocínio do item anterior vale para o método `update` do `casosController.js`. Você faz uma validação do campo `status`, mas não valida os outros campos obrigatórios do caso.
-
-No `create` você faz uma validação completa, mas no `update` não. Isso pode permitir payloads inválidos na atualização completa.
-
-**Sugestão:** Implemente validação completa no método `update` para casos, semelhante à feita no `create`.
-
-Exemplo:
+Porém, no controlador de casos, especialmente no método `create`, algumas mensagens de erro ainda poderiam ser mais detalhadas, por exemplo, quando o status não está entre os permitidos, você retorna:
 
 ```js
-update(req, res) {
-    const id = req.params.id;
-    const dadosAtualizados = { ...req.body };
-
-    if ('id' in dadosAtualizados) {
-        delete dadosAtualizados.id;
-    }
-
-    const errors = [];
-
-    if (!dadosAtualizados.titulo) {
-        errors.push({ field: "titulo", message: "Título é obrigatório" });
-    }
-
-    if (!dadosAtualizados.descricao) {
-        errors.push({ field: "descricao", message: "Descrição é obrigatória" });
-    }
-
-    if (!dadosAtualizados.status) {
-        errors.push({ field: "status", message: "Status é obrigatório" });
-    } else if (!['aberto', 'solucionado'].includes(dadosAtualizados.status)) {
-        errors.push({ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" });
-    }
-
-    if (!dadosAtualizados.agente_id) {
-        errors.push({ field: "agente_id", message: "Agente é obrigatório" });
-    } else {
-        const agenteExiste = agentesRepository.findById(dadosAtualizados.agente_id);
-        if (!agenteExiste) {
-            return res.status(404).json({ message: 'Agente não encontrado para o agente_id informado' });
-        }
-    }
-
-    if (errors.length > 0) {
-        return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
-    }
-
-    const caso = casosRepository.update(id, dadosAtualizados);
-    if (!caso) return res.status(404).send('Caso não encontrado');
-    res.json(caso);
-},
+return res.status(400).json({
+    errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
+});
 ```
 
-Assim você mantém a integridade dos dados mesmo na atualização completa.
+Mas faltou incluir o campo `status` e a mensagem geral no corpo da resposta, como fez no agente. Além disso, para filtros e validações adicionais, você poderia padronizar as mensagens para todos os endpoints.
+
+Isso ajuda o cliente da API a entender melhor o que deu errado e facilita o debugging.
 
 ---
 
-### 5. Bônus não implementados
+### 5. Organização do Projeto e Arquitetura
 
-Você já fez um ótimo trabalho implementando o filtro simples por status em `/casos`. Parabéns! 🎉
+Sua estrutura de diretórios está perfeita e segue o padrão esperado:
 
-Porém, os filtros mais avançados, como:
+```
+.
+├── controllers/
+│   ├── agentesController.js
+│   └── casosController.js
+├── repositories/
+│   ├── agentesRepository.js
+│   └── casosRepository.js
+├── routes/
+│   ├── agentesRoutes.js
+│   └── casosRoutes.js
+├── server.js
+├── utils/
+│   └── errorHandler.js
+```
 
-- Buscar agente responsável por caso
-- Filtrar casos por agente
-- Filtrar casos por palavras-chave no título/descrição
-- Filtrar agentes por data de incorporação com ordenação crescente e decrescente
-- Mensagens de erro customizadas para argumentos inválidos
-
-Ainda não foram implementados. Esses recursos são opcionais, mas adicionam muito valor à API e mostram domínio avançado.
-
-Se quiser, posso te indicar materiais para implementar esses filtros usando query params e funções de array (`filter`, `sort`), que vão deixar sua API ainda mais poderosa! 😉
+Isso é muito importante para manter o projeto organizado e escalável! Parabéns por isso! 👏
 
 ---
 
-## 📚 Recursos para você aprofundar e corrigir esses pontos
+## 📚 Recomendações de Aprendizado para Você
 
-- Para entender melhor a validação de dados e tratamento de erros HTTP 400 e 404:  
-  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
-  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404  
+- Para reforçar sua validação e tratamento de erros, recomendo este vídeo super didático sobre validação em APIs Node.js/Express:  
   https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
 
-- Para reforçar a organização do projeto e arquitetura MVC no Node.js:  
-  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH  
-  https://expressjs.com/pt-br/guide/routing.html
+- Para entender melhor como manipular filtros e query params no Express, este vídeo pode ajudar bastante:  
+  https://youtu.be/--TQwiNIw28
 
-- Para manipulação de arrays no JavaScript (filtrar, mapear, ordenar):  
-  https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
+- Para aprofundar seu conhecimento na arquitetura MVC e organização de arquivos em Node.js, veja:  
+  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
 
-- Para entender melhor o fluxo de requisição e resposta no Express:  
-  https://youtu.be/Bn8gcSQH-bc?si=Df4htGoVrV0NR7ri
-
----
-
-## 📝 Resumo rápido dos principais pontos para focar
-
-- 🔐 **Impedir alteração do ID** em atualizações (PATCH e PUT), reforçando a remoção do campo `id` tanto no controller quanto no repository.
-
-- ✅ **Implementar validação de payload** para atualizações parciais (PATCH) e completas (PUT) para garantir que dados inválidos não sejam aceitos.
-
-- 🛠️ **Completar os filtros avançados** na API para casos e agentes, como filtragem por agente, palavras-chave e ordenação por datas.
-
-- 💡 **Manter a organização modular** que você já fez, garantindo que cada camada (routes, controllers, repositories) tenha responsabilidade clara.
+- E, claro, para garantir que seus status HTTP estejam corretos e você entenda a fundo o protocolo, recomendo:  
+  https://youtu.be/RSZHvQomeKE
 
 ---
 
-Vitor, você está no caminho certo e já fez um trabalho muito sólido! 🚀 Com esses ajustes, sua API vai ficar ainda mais robusta, segura e completa. Continue explorando e aprimorando, pois seu código já está com uma ótima base para projetos profissionais.
+## 📝 Resumo dos Principais Pontos para Melhorar
 
-Se precisar de ajuda para implementar as validações ou filtros, me chama aqui que eu te ajudo! 😉
+- 🚫 **Não permitir alteração do campo `id`** nos métodos PATCH e PUT para agentes e casos — retorne erro 400 se tentar alterar.
+- 🔍 Corrigir o filtro por `titulo` e `descricao` no controlador de casos, usando a variável correta dentro do `.filter()`.
+- 🛠️ Padronizar e melhorar as mensagens de erro customizadas para todos os endpoints, garantindo clareza e consistência.
+- ✅ Continuar explorando os filtros e ordenação para agentes e casos, aprimorando os bônus que você já implementou com sucesso.
 
-Um abraço de Code Buddy e sucesso na jornada! 👊💙
+---
+
+Vitor, seu código está muito sólido e você já está bem à frente em vários aspectos importantes de uma API RESTful! 🚀 Com pequenos ajustes nas validações e filtros, sua API vai ficar ainda mais robusta e profissional.
+
+Continue nessa pegada, estudando e praticando! Qualquer dúvida ou desafio, estarei aqui para ajudar. 👊💥
+
+Um abraço e até a próxima revisão!  
+Seu Code Buddy 🤖❤️
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
