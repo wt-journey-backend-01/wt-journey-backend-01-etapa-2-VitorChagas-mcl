@@ -1,150 +1,196 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 3 créditos restantes para usar o sistema de feedback AI.
+Você tem 2 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para VitorChagas-mcl:
 
-Nota final: **93.3/100**
+Nota final: **97.7/100**
 
-# Feedback para você, VitorChagas-mcl 🚓✨
+# Feedback para o VitorChagas-mcl 🚓🚀
 
-Olá, Vitor! Primeiro, quero te parabenizar pelo excelente trabalho! 🎉 Sua API para o Departamento de Polícia está muito bem estruturada e você conseguiu implementar todos os métodos HTTP para os recursos `/agentes` e `/casos` com uma organização clara entre rotas, controladores e repositórios. Isso mostra que você entendeu muito bem a arquitetura modular que é essencial para projetos escaláveis.
-
-## 🎯 Pontos Fortes que Merecem Destaque
-
-- Seu **server.js** está bem configurado, com o uso correto do `express.json()`, rotas separadas e um middleware de tratamento de erro customizado. Isso é fundamental para manter o código limpo e robusto.
-- Nos **controllers**, você fez uma validação consistente dos dados, especialmente no `agentesController.js`, com funções específicas para validar datas e checar campos obrigatórios. 👏
-- A manipulação dos dados em memória nos **repositories** está perfeita, usando arrays e métodos do JavaScript para criar, atualizar, deletar e buscar os registros.
-- Você implementou os filtros básicos para os casos, como filtragem por `status` e `agente_id`, e também para os agentes, com filtros por `cargo` e ordenação por `dataDeIncorporacao` — isso é um bônus super valioso e que demonstra seu esforço extra! 🌟
-
-## 🔍 Análise Detalhada dos Pontos que Precisam de Atenção
-
-### 1. PATCH em `/agentes`: Validação do Payload e Alteração do ID
-
-Percebi que o teste que verifica se o PATCH para atualizar parcialmente um agente retorna erro 400 quando o payload está em formato incorreto não passou. Ao analisar seu código no `agentesController.js`, especificamente o método `partialUpdate`, notei que você está permitindo que o campo `id` seja removido do objeto atualizado, o que é ótimo:
-
-```js
-if ('id' in dadosAtualizados) {
-    delete dadosAtualizados.id;
-}
-```
-
-Porém, não há uma validação para impedir que o `id` seja alterado caso esteja presente no corpo da requisição, ou seja, se o usuário enviar um campo `id` diferente, você simplesmente o remove, mas não retorna erro. Isso faz com que o teste espere um 400 (Bad Request) e sua API não retorne.
-
-**Por que isso é importante?**  
-O ID é o identificador único do recurso e não deve ser alterado em atualizações parciais (PATCH) ou completas (PUT). Permitir que ele seja modificado pode causar inconsistências e bugs difíceis de rastrear.
-
-**Como corrigir?**  
-Você pode adicionar uma validação para verificar se o campo `id` está presente e, se estiver, retornar um erro 400, algo assim:
-
-```js
-if ('id' in req.body) {
-    return res.status(400).json({
-        status: 400,
-        message: "Não é permitido alterar o ID do agente."
-    });
-}
-```
-
-Isso deve ficar logo no início do método `partialUpdate` para garantir que o ID não seja alterado.
+Olá, Vitor! Antes de mais nada, parabéns pelo trabalho incrível que você entregou! 🎉 Seu código está muito bem estruturado, e é visível o cuidado que teve para organizar tudo em controllers, repositories, rotas e até mesmo a documentação Swagger — isso é fantástico e mostra que você está pensando em escalabilidade e manutenção, que são pontos chave para APIs profissionais.
 
 ---
 
-### 2. PUT em `/casos`: Permite Alterar o ID do Caso
+## 🌟 Pontos Fortes que Merecem Destaque
 
-No seu `casosController.js`, no método `update` (que trata o PUT), você faz a remoção do campo `id` do objeto atualizado:
+- **Arquitetura modular**: Você separou muito bem as responsabilidades entre `routes/`, `controllers/` e `repositories/`. Isso facilita demais o entendimento e a manutenção do projeto.
+- **Validações robustas**: Em ambos os controladores (`agentesController.js` e `casosController.js`), você implementou validações detalhadas para os campos obrigatórios e formatos, incluindo o uso de mensagens de erro claras e status HTTP adequados (400, 404).
+- **Tratamento de erros**: O uso do middleware `errorHandler` no `server.js` e a resposta para rotas não encontradas (`404`) mostram que você está atento ao fluxo correto da API.
+- **Filtros implementados**: A filtragem por status e agente_id em `/casos` e filtros com ordenação em `/agentes` demonstram seu domínio em manipulação de dados em memória e query params.
+- **Swagger configurado**: A inclusão da documentação Swagger é um plus que traz muita profissionalidade para o seu projeto.
+- **Bônus conquistados**: Você conseguiu implementar filtros simples de casos por status e agente, além de ordenação por data de incorporação para agentes — isso é excelente! 👏
 
-```js
-const dadosAtualizados = { ...req.body };
-if ('id' in dadosAtualizados) delete dadosAtualizados.id;
-```
+---
 
-Isso impede que o ID seja alterado, o que é correto. No entanto, você recebeu uma penalidade indicando que sua API permite alterar o ID do caso via PUT.
+## 🕵️‍♂️ Análise Profunda do Ponto que Precisa de Atenção
 
-**Ao investigar, percebi que no método `partialUpdate` de casos, você não faz nenhuma validação para impedir a alteração do ID:**
+### Falha detectada:  
+`UPDATE: Recebe status code 400 ao tentar atualizar agente parcialmente com método PATCH e payload em formato incorreto`
+
+---
+
+### O que eu vi no seu código?
+
+No seu `agentesController.js`, o método `partialUpdate` está assim:
 
 ```js
 partialUpdate(req, res) {
     const id = req.params.id;
     const dadosAtualizados = { ...req.body };
-    if ('id' in dadosAtualizados) {
-        delete dadosAtualizados.id;
+
+    if ('id' in req.body) {
+        return res.status(400).json({
+            status: 400,
+            message: "Não é permitido alterar o ID do caso."
+        });
     }
-    // ...
-}
+
+    const errors = [];
+
+    if ('nome' in dadosAtualizados && !dadosAtualizados.nome) {
+        errors.push({ field: "nome", message: "Nome não pode ser vazio" });
+    }
+
+    if ('cargo' in dadosAtualizados && !dadosAtualizados.cargo) {
+        errors.push({ field: "cargo", message: "Cargo não pode ser vazio" });
+    }
+
+    if ('dataDeIncorporacao' in dadosAtualizados && !isValidDate(dadosAtualizados.dataDeIncorporacao)) {
+        errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+    }
+
+    if (errors.length > 0) {
+        return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+    }
+
+    const agenteAtualizado = agentesRepository.update(id, dadosAtualizados);
+    if (!agenteAtualizado) {
+        return res.status(404).send('Agente não encontrado');
+    }
+    res.json(agenteAtualizado);
+},
 ```
 
-Aqui, você apenas remove o campo `id` do corpo, mas não retorna erro se o usuário tentar alterar o ID. Isso pode ser interpretado como permitir a alteração do ID (mesmo que você não persista a alteração, o correto é não aceitar a alteração e retornar erro).
-
-**Solução:**  
-Assim como no caso do agente, recomendo que você retorne um erro 400 caso o campo `id` esteja presente no corpo da requisição para o método PATCH em casos:
-
-```js
-if ('id' in req.body) {
-    return res.status(400).json({
-        status: 400,
-        message: "Não é permitido alterar o ID do caso."
-    });
-}
-```
+Aqui, você está validando corretamente os campos e retornando um erro 400 quando algum campo está inválido. Porém, o teste que falha indica que, ao tentar atualizar parcialmente com um payload mal formatado, o status 400 não está sendo retornado como esperado.
 
 ---
 
-### 3. Filtros de Busca em `/casos` para `titulo` e `descricao`
+### Qual é a causa raiz?
 
-No método `findAll` do `casosController.js`, você tenta filtrar os casos por `titulo` e `descricao` com o seguinte trecho:
+O problema está no fato de que, no seu método `partialUpdate`, você está chamando diretamente o `agentesRepository.update` que é feito para atualização completa, e não parcial.
+
+No seu `agentesRepository.js`, a função `update` faz o seguinte:
 
 ```js
-if(titulo){
-    casos = casos.filter(caso => casos.titulo === titulo);
-}
+function update(id, agenteAtualizado) {
+    const index = agentes.findIndex(agente => agente.id === id);
+    if (index === -1) return null;
 
-if(descricao){
-    casos = casos.filter(caso => casos.descricao === descricao);
+    const { id: _, ...dadosSemId } = agenteAtualizado; 
+    agentes[index] = { ...agentes[index], ...dadosSemId };
+    agentes[index].id = id;
+    return agentes[index];
 }
 ```
 
-Aqui, o problema é que você está usando `casos.titulo` e `casos.descricao` dentro do filtro, mas o correto é acessar o campo do elemento da iteração, que é `caso` (no singular). Ou seja, deve ser:
+Essa função **não diferencia atualização parcial de completa**, o que é correto, pois ela simplesmente mescla os dados. Porém, o problema é que o seu `partialUpdate` não está validando se o payload recebido está vazio ou no formato incorreto antes de chamar essa função.
 
-```js
-if(titulo){
-    casos = casos.filter(caso => caso.titulo === titulo);
-}
-
-if(descricao){
-    casos = casos.filter(caso => caso.descricao === descricao);
-}
-```
-
-Essa pequena confusão faz com que o filtro não funcione e impacta diretamente na funcionalidade de busca por palavras-chave.
+Se o payload estiver vazio (por exemplo, um PATCH com corpo `{}`), seu código não acusa erro, e passa para a atualização — mas isso não deveria acontecer, pois a atualização parcial precisa de pelo menos um campo válido para atualizar.
 
 ---
 
-### 4. Mensagens de Erro Customizadas para Argumentos Inválidos
+### Como melhorar?
 
-Você fez um bom trabalho implementando mensagens de erro personalizadas para os agentes, como:
+Você precisa garantir que o payload do PATCH tenha pelo menos um campo válido para atualizar, e que os campos estejam no formato esperado. Se o payload estiver vazio ou com campos inválidos, deve retornar erro 400.
 
-```js
-return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
-```
-
-Porém, no controlador de casos, especialmente no método `create`, algumas mensagens de erro ainda poderiam ser mais detalhadas, por exemplo, quando o status não está entre os permitidos, você retorna:
+Por exemplo, você pode adicionar uma validação no início do `partialUpdate` para checar se o corpo da requisição tem pelo menos uma propriedade válida:
 
 ```js
-return res.status(400).json({
-    errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
-});
+partialUpdate(req, res) {
+    const id = req.params.id;
+    const dadosAtualizados = { ...req.body };
+
+    if (Object.keys(dadosAtualizados).length === 0) {
+        return res.status(400).json({
+            status: 400,
+            message: "Nenhum dado para atualizar foi fornecido."
+        });
+    }
+
+    if ('id' in dadosAtualizados) {
+        return res.status(400).json({
+            status: 400,
+            message: "Não é permitido alterar o ID do caso."
+        });
+    }
+
+    const errors = [];
+
+    if ('nome' in dadosAtualizados && !dadosAtualizados.nome) {
+        errors.push({ field: "nome", message: "Nome não pode ser vazio" });
+    }
+
+    if ('cargo' in dadosAtualizados && !dadosAtualizados.cargo) {
+        errors.push({ field: "cargo", message: "Cargo não pode ser vazio" });
+    }
+
+    if ('dataDeIncorporacao' in dadosAtualizados && !isValidDate(dadosAtualizados.dataDeIncorporacao)) {
+        errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+    }
+
+    if (errors.length > 0) {
+        return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+    }
+
+    const agenteAtualizado = agentesRepository.update(id, dadosAtualizados);
+    if (!agenteAtualizado) {
+        return res.status(404).send('Agente não encontrado');
+    }
+    res.json(agenteAtualizado);
+},
 ```
 
-Mas faltou incluir o campo `status` e a mensagem geral no corpo da resposta, como fez no agente. Além disso, para filtros e validações adicionais, você poderia padronizar as mensagens para todos os endpoints.
-
-Isso ajuda o cliente da API a entender melhor o que deu errado e facilita o debugging.
+Essa checagem simples no começo evita que você tente uma atualização parcial sem dados, que seria um payload inválido.
 
 ---
 
-### 5. Organização do Projeto e Arquitetura
+### Por que isso é importante?
 
-Sua estrutura de diretórios está perfeita e segue o padrão esperado:
+No PATCH, diferente do PUT, você pode enviar apenas os campos que deseja alterar, mas não pode enviar um corpo vazio ou mal formatado. Sua API deve ser rigorosa para garantir integridade dos dados e evitar operações sem sentido.
+
+---
+
+## 📚 Recursos Recomendados para Você
+
+- Para entender melhor validação de dados e tratamento de erros 400:  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
+- Para aprofundar no fluxo de requisição e resposta e status codes no Express.js:  
+  https://youtu.be/RSZHvQomeKE  
+- Para entender a arquitetura MVC e organização do projeto Node.js com Express:  
+  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH  
+
+---
+
+## Considerações sobre os Bônus que Ainda Podem Crescer 🌱
+
+Você conseguiu implementar filtros simples em `/casos` e ordenação em `/agentes` — isso é muito legal! 👏
+
+Porém, notei que alguns filtros mais complexos, como:
+
+- Filtro de agente responsável por caso (relacionamento entre recursos)
+- Filtragem por keywords no título e/ou descrição dos casos
+- Mensagens de erro customizadas para argumentos inválidos
+
+Ainda não estão presentes ou completos.
+
+Isso é normal, pois são desafios extras que demandam um pouco mais de lógica para cruzar dados e melhorar mensagens. Vale a pena focar nessas melhorias para deixar sua API ainda mais robusta e amigável!
+
+---
+
+## 🗺️ Sobre a Estrutura do Projeto
+
+Sua estrutura está perfeita e condiz com o que é esperado:
 
 ```
 .
@@ -157,46 +203,33 @@ Sua estrutura de diretórios está perfeita e segue o padrão esperado:
 ├── routes/
 │   ├── agentesRoutes.js
 │   └── casosRoutes.js
-├── server.js
+├── docs/
+│   └── swagger.js
 ├── utils/
-│   └── errorHandler.js
+│   └── errorHandler.js
+├── server.js
+├── package.json
 ```
 
-Isso é muito importante para manter o projeto organizado e escalável! Parabéns por isso! 👏
+Continue mantendo essa organização que é fundamental para projetos Node.js escaláveis!
 
 ---
 
-## 📚 Recomendações de Aprendizado para Você
+## 📝 Resumo Rápido dos Pontos para Focar
 
-- Para reforçar sua validação e tratamento de erros, recomendo este vídeo super didático sobre validação em APIs Node.js/Express:  
-  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
-
-- Para entender melhor como manipular filtros e query params no Express, este vídeo pode ajudar bastante:  
-  https://youtu.be/--TQwiNIw28
-
-- Para aprofundar seu conhecimento na arquitetura MVC e organização de arquivos em Node.js, veja:  
-  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
-
-- E, claro, para garantir que seus status HTTP estejam corretos e você entenda a fundo o protocolo, recomendo:  
-  https://youtu.be/RSZHvQomeKE
+- ✅ Adicionar validação no método PATCH de agentes para garantir que o payload não esteja vazio.
+- ✅ Garantir que o retorno 400 seja disparado para payloads mal formatados ou vazios em atualizações parciais.
+- 🌱 Explorar filtros mais avançados e mensagens de erro customizadas para os recursos `/agentes` e `/casos`.
+- 🎯 Manter a organização modular do projeto, que está excelente.
+- 📚 Revisar os recursos indicados para consolidar seus conhecimentos em validação e tratamento de erros.
 
 ---
 
-## 📝 Resumo dos Principais Pontos para Melhorar
+Vitor, seu código está muito bem feito e você está no caminho certo! 🚀 Com essa pequena melhoria no PATCH e focando nos bônus, sua API vai ficar ainda mais completa e profissional. Continue praticando e explorando essas possibilidades, porque o seu potencial é enorme! 💪✨
 
-- 🚫 **Não permitir alteração do campo `id`** nos métodos PATCH e PUT para agentes e casos — retorne erro 400 se tentar alterar.
-- 🔍 Corrigir o filtro por `titulo` e `descricao` no controlador de casos, usando a variável correta dentro do `.filter()`.
-- 🛠️ Padronizar e melhorar as mensagens de erro customizadas para todos os endpoints, garantindo clareza e consistência.
-- ✅ Continuar explorando os filtros e ordenação para agentes e casos, aprimorando os bônus que você já implementou com sucesso.
+Se precisar de uma ajuda para implementar essas validações ou para entender melhor algum conceito, é só chamar! Estou aqui para te ajudar a crescer como dev! 😉
 
----
-
-Vitor, seu código está muito sólido e você já está bem à frente em vários aspectos importantes de uma API RESTful! 🚀 Com pequenos ajustes nas validações e filtros, sua API vai ficar ainda mais robusta e profissional.
-
-Continue nessa pegada, estudando e praticando! Qualquer dúvida ou desafio, estarei aqui para ajudar. 👊💥
-
-Um abraço e até a próxima revisão!  
-Seu Code Buddy 🤖❤️
+Abraços e sucesso! 👊👨‍💻👩‍💻
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
