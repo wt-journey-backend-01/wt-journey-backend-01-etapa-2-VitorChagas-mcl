@@ -17,7 +17,7 @@ const options = {
             },
         ],
     },
-    apis: ['./routes/casosRoutes.js', './routes/agentesRoutes.js'], // Onde estão os arquivos com as anotações JSDoc
+    apis: ['./routes/*.js'], // Onde estão os arquivos com as anotações JSDoc
 };
 
 const swaggerSpec = swaggerJSDoc(options);

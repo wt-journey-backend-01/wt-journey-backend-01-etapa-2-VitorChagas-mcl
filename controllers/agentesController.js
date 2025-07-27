@@ -72,10 +72,22 @@ module.exports = {
         }
 
         const errors = [];
-        if (!nome) errors.push({ field: "nome", message: "Nome é obrigatório" });
-        if (!cargo) errors.push({ field: "cargo", message: "Cargo é obrigatório" });
-        if (!dataDeIncorporacao || !isValidDate(dataDeIncorporacao)) {
-            errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+        if ('nome' in dadosAtualizados) {
+            if (typeof dadosAtualizados.nome !== 'string' || dadosAtualizados.nome.trim() === '') {
+                errors.push({ field: "nome", message: "Nome deve ser uma string não vazia" });
+            }
+        }
+
+        if ('cargo' in dadosAtualizados) {
+            if (typeof dadosAtualizados.cargo !== 'string' || dadosAtualizados.cargo.trim() === '') {
+                errors.push({ field: "cargo", message: "Cargo deve ser uma string não vazia" });
+            }
+        }
+
+        if ('dataDeIncorporacao' in dadosAtualizados) {
+            if (!isValidDate(dadosAtualizados.dataDeIncorporacao)) {
+                errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+            }
         }
 
         if (errors.length > 0) {
@@ -99,11 +111,11 @@ module.exports = {
                 message: "Nenhum dado para atualizar foi fornecido."
             });
         }
-        
+
         if ('id' in req.body) {
             return res.status(400).json({
                 status: 400,
-                message: "Não é permitido alterar o ID do caso."
+                message: "Não é permitido alterar o ID do agente."
             });
         }
 
