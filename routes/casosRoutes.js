@@ -30,7 +30,7 @@ router.get("/", casosController.findAll);
  *          200:
  *              description: Caso buscado por id com sucesso
  */
-router.get("/:id", casosController.findById)    ;
+router.get("/:id", casosController.findById);
 /**
  * @swagger
  * /casos:
@@ -64,7 +64,7 @@ router.post("/", casosController.create);
  * @swagger
  * /casos/{id}:
  *  put:
- *      summary: Atualizar de casos
+ *      summary: Atualização de casos
  *      tags: [Casos]
  *      parameters:
  *          - in: path

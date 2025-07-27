@@ -93,6 +93,13 @@ module.exports = {
         const id = req.params.id;
         const dadosAtualizados = { ...req.body };
 
+        if (Object.keys(dadosAtualizados).length === 0) {
+            return res.status(400).json({
+                status: 400,
+                message: "Nenhum dado para atualizar foi fornecido."
+            });
+        }
+        
         if ('id' in req.body) {
             return res.status(400).json({
                 status: 400,
