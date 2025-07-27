@@ -64,8 +64,11 @@ module.exports = {
         const id = req.params.id;
         const { nome, dataDeIncorporacao, cargo, id: idBody } = req.body;
 
-        if (idBody && idBody !== id) {
-            return res.status(400).json({ message: "Não é permitido alterar o ID do agente." });
+        if ('id' in req.body) {
+            return res.status(400).json({
+                status: 400,
+                message: "Não é permitido alterar o ID do caso."
+            });
         }
 
         const errors = [];
@@ -90,8 +93,11 @@ module.exports = {
         const id = req.params.id;
         const dadosAtualizados = { ...req.body };
 
-        if ('id' in dadosAtualizados) {
-            delete dadosAtualizados.id;
+        if ('id' in req.body) {
+            return res.status(400).json({
+                status: 400,
+                message: "Não é permitido alterar o ID do caso."
+            });
         }
 
         const errors = [];
@@ -121,8 +127,8 @@ module.exports = {
 
     delete(req, res) {
         const id = req.params.id;
-        const sucesso = agentesRepository.delete(id);
-        if (!sucesso) {
+        const deletado = agentesRepository.delete(id);
+        if (!deletado) {
             return res.status(404).send('Agente não encontrado');
         }
         res.status(204).send();

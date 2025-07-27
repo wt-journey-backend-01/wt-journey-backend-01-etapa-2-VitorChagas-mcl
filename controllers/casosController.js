@@ -27,11 +27,11 @@ module.exports = {
         }
 
         if(titulo){
-            casos = casos.filter(caso => casos.titulo === titulo);
+            casos = casos.filter(caso => caso.titulo === titulo);
         }
 
         if(descricao){
-            casos = casos.filter(caso => casos.descricao === descricao);
+            casos = casos.filter(caso => caso.descricao === descricao);
         }
 
         res.json(casos);
@@ -49,39 +49,56 @@ module.exports = {
     create(req, res) {
         const novoCaso = req.body;
         const statusPermitidos = ['aberto', 'solucionado'];
-        // Validação
-        if (!novoCaso.titulo || !novoCaso.descricao || !novoCaso.status || !novoCaso.agente_id) {
-            return res.status(400).json({
-                status: 400,
-                message: "Parâmetros inválidos",
-                errors: [
-                    !novoCaso.titulo ? { field: "titulo", message: "Título é obrigatório" } : null,
-                    !novoCaso.descricao ? { field: "descricao", message: "Descrição é obrigatória" } : null,
-                    !novoCaso.status ? { field: "status", message: "Status é obrigatório aberto ou solucionado" } : null,
-                    !novoCaso.agente_id ? { field: "agente_id", message: "Agente é obrigatório" } : null
-                ].filter(Boolean)
-            });
+        const errors = [];
+
+        if (!novoCaso.titulo) {
+            errors.push({ field: "titulo", message: "Título é obrigatório" });
         }
 
-        if (!statusPermitidos.includes(novoCaso.status)) {
+        if (!novoCaso.descricao) {
+            errors.push({ field: "descricao", message: "Descrição é obrigatória" });
+        }
+
+        if (!novoCaso.status) {
+            errors.push({ field: "status", message: "Status é obrigatório" });
+        } else if (!statusPermitidos.includes(novoCaso.status)) {
             return res.status(400).json({
                 errors: [{ field: "status", message: "Status deve ser 'aberto' ou 'solucionado'" }]
             });
         }
+
+        if (!novoCaso.agente_id) {
+            errors.push({ field: "agente_id", message: "Agente é obrigatório" });
+        }
+
+        if (errors.length > 0) {
+            return res.status(400).json({
+                status: 400,
+                message: "Parâmetros inválidos",
+                errors
+            });
+        }
+
         const agenteExiste = agentesRepository.findById(novoCaso.agente_id);
         if (!agenteExiste) {
             return res.status(404).json({ message: 'Agente não encontrado para o agente_id informado' });
         }
 
         const casoCriado = casosRepository.create(novoCaso);
-        res.status(201).json(casoCriado);
+        return res.status(201).json(casoCriado);
     },
+
 
     
     update(req, res) {
         const id = req.params.id;
         const dadosAtualizados = { ...req.body };
-        if ('id' in dadosAtualizados) delete dadosAtualizados.id;
+        if ('id' in req.body) {
+            return res.status(400).json({
+                status: 400,
+                message: "Não é permitido alterar o ID do caso."
+            });
+        }
 
         const errors = [];
 
@@ -121,8 +138,11 @@ module.exports = {
     partialUpdate(req, res) {
         const id = req.params.id;
         const dadosAtualizados = { ...req.body };
-        if ('id' in dadosAtualizados) {
-            delete dadosAtualizados.id;
+        if ('id' in req.body) {
+            return res.status(400).json({
+                status: 400,
+                message: "Não é permitido alterar o ID do caso."
+            });
         }
         const casoAtualizado = casosRepository.update(id, dadosAtualizados);
         if (!casoAtualizado) {
@@ -133,8 +153,8 @@ module.exports = {
 
     delete(req, res) {
         const id = req.params.id;
-        const sucesso = casosRepository.delete(id);
-        if (!sucesso) {
+        const deletado = casosRepository.delete(id);
+        if (!deletado) {
             return res.status(404).send('Caso não encontrado');
         }
         res.status(204).send();

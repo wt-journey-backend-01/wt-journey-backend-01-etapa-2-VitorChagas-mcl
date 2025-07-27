@@ -20,7 +20,6 @@ function findById(id) {
 
 function create(novoCaso) {
     novoCaso.id = uuid.v4();
-    novoCaso.data = new Date().toISOString();
     casos.push(novoCaso);
     return novoCaso;
 }
