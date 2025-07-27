@@ -45,10 +45,14 @@ module.exports = {
   create(req, res) {
         const { nome, dataDeIncorporacao, cargo } = req.body;
         const errors = [];
-        if (!nome) errors.push({ field: "nome", message: "Nome é obrigatório" });
-        if (!cargo) errors.push({ field: "cargo", message: "Cargo é obrigatório" });
+        if (!nome.titulo) {
+            errors.push({ field: "nome", message: "Nome é obrigatório" });
+        }
+        if (!cargo){
+            errors.push({ field: "cargo", message: "Cargo é obrigatório" });
+        }
         if (!dataDeIncorporacao || !isValidDate(dataDeIncorporacao)) {
-        errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+            errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
         }
 
         if (errors.length > 0) {
