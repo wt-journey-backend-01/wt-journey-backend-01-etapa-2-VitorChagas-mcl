@@ -1,6 +1,7 @@
 
 # Node modules (bibliotecas instaladas)
 node_modules/
+.env
 
 # Logs
 logs/
