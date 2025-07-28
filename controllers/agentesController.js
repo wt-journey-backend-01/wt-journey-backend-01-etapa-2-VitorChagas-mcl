@@ -8,11 +8,10 @@ function isValidDate(dateString) {
   return !isNaN(date.getTime()) && date <= today;
 }
 
-
 module.exports = {
     findAll(req, res) {
         let agentes = agentesRepository.findAll();
-        const { cargo, sort } = req.query;
+        const {cargo, sort } = req.query;
 
         if (cargo) {
             agentes = agentes.filter(agente =>
@@ -22,10 +21,12 @@ module.exports = {
 
         if (sort === 'dataDeIncorporacao') {
             agentes = agentes.sort((a, b) =>
-                new Date(a.dataDeIncorporacao).getTime() - new Date(b.dataDeIncorporacao).getTime());
+                new Date(a.dataDeIncorporacao) - new Date(b.dataDeIncorporacao)
+            );
         } else if (sort === '-dataDeIncorporacao') {
             agentes = agentes.sort((a, b) =>
-                new Date(b.dataDeIncorporacao).getTime() - new Date(a.dataDeIncorporacao).getTime());
+                new Date(b.dataDeIncorporacao) - new Date(a.dataDeIncorporacao)
+            );
         }
 
         res.json(agentes);
@@ -44,19 +45,14 @@ module.exports = {
   create(req, res) {
         const { nome, dataDeIncorporacao, cargo } = req.body;
         const errors = [];
-        if (!nome) {
+        if (!nome.titulo) {
             errors.push({ field: "nome", message: "Nome é obrigatório" });
         }
         if (!cargo){
             errors.push({ field: "cargo", message: "Cargo é obrigatório" });
         }
         if (!dataDeIncorporacao || !isValidDate(dataDeIncorporacao)) {
-            errors.push({
-                message: "Parâmetros inválidos",
-                errors: [
-                    { field: "dataDeIncorporacao", message: "Data inválida ou no futuro" }
-                ]
-        });
+            errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
         }
 
         if (errors.length > 0) {
@@ -65,21 +61,19 @@ module.exports = {
 
         const agenteCriado = agentesRepository.create({ nome, dataDeIncorporacao, cargo });
         res.status(201).json(agenteCriado);
-        },
+  },
 
 
     update(req, res) {
         const id = req.params.id;
-        const dadosAtualizados = { ...req.body };
+        const { nome, dataDeIncorporacao, cargo, id: idBody } = req.body;
 
-        if ('id' in dadosAtualizados) {
+        if ('id' in req.body) {
             return res.status(400).json({
-            status: 400,
-            message: "Não é permitido alterar o ID do agente."
+                status: 400,
+                message: "Não é permitido alterar o ID do caso."
             });
         }
-
-        const { nome, dataDeIncorporacao, cargo } = dadosAtualizados;
 
         const errors = [];
         if ('nome' in dadosAtualizados) {
@@ -112,51 +106,46 @@ module.exports = {
     },
 
     partialUpdate(req, res) {
-    const id = req.params.id;
-    const dadosAtualizados = { ...req.body };
+        const id = req.params.id;
+        const dadosAtualizados = { ...req.body };
 
-    if (Object.keys(dadosAtualizados).length === 0) {
-        return res.status(400).json({
-        status: 400,
-        message: "Nenhum dado para atualizar foi fornecido.",
-        });
-    }
+        if (Object.keys(dadosAtualizados).length === 0) {
+            return res.status(400).json({
+                status: 400,
+                message: "Nenhum dado para atualizar foi fornecido."
+            });
+        }
 
-    if ("id" in dadosAtualizados) {
-        return res.status(400).json({
-        status: 400,
-        message: "Não é permitido alterar o ID do agente.",
-        });
-    }
+        if ('id' in req.body) {
+            return res.status(400).json({
+                status: 400,
+                message: "Não é permitido alterar o ID do agente."
+            });
+        }
 
-    const errors = [];
+        const errors = [];
 
-    if ("nome" in dadosAtualizados && (!dadosAtualizados.nome || typeof dadosAtualizados.nome !== "string" || dadosAtualizados.nome.trim() === "")) {
-        errors.push({ field: "nome", message: "Nome não pode ser vazio" });
-    }
+        if (!('nome' in dadosAtualizados) || typeof dadosAtualizados.nome !== 'string' || dadosAtualizados.nome.trim() === '') {
+        errors.push({ field: "nome", message: "Nome é obrigatório e deve ser uma string não vazia" });
+        }
 
-    if ("cargo" in dadosAtualizados && (!dadosAtualizados.cargo || typeof dadosAtualizados.cargo !== "string" || dadosAtualizados.cargo.trim() === "")) {
-        errors.push({ field: "cargo", message: "Cargo não pode ser vazio" });
-    }
+        if (!('cargo' in dadosAtualizados) || typeof dadosAtualizados.cargo !== 'string' || dadosAtualizados.cargo.trim() === '') {
+            errors.push({ field: "cargo", message: "Cargo não pode ser vazio" });
+        }
 
-    if ("dataDeIncorporacao" in dadosAtualizados && !isValidDate(dadosAtualizados.dataDeIncorporacao)) {
-        errors.push({
-        field: "dataDeIncorporacao",
-        message: "Data inválida ou no futuro",
-        });
-    }
+        if ('dataDeIncorporacao' in dadosAtualizados && !isValidDate(dadosAtualizados.dataDeIncorporacao) || typeof dadosAtualizados.cargo !== 'string' || dadosAtualizados.cargo.trim() === ''){
+            errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+        }
 
-    if (errors.length > 0) {
-        return res
-        .status(400)
-        .json({ status: 400, message: "Parâmetros inválidos", errors });
-    }
+        if (errors.length > 0) {
+            return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+        }
 
-    const agenteAtualizado = agentesRepository.update(id, dadosAtualizados);
-    if (!agenteAtualizado) {
-        return res.status(404).send("Agente não encontrado");
-    }
-    res.json(agenteAtualizado);
+        const agenteAtualizado = agentesRepository.update(id, dadosAtualizados);
+        if (!agenteAtualizado) {
+            return res.status(404).send('Agente não encontrado');
+        }
+        res.json(agenteAtualizado);
     },
 
     delete(req, res) {
